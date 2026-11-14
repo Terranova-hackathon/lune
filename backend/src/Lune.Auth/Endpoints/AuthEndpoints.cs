@@ -20,19 +20,71 @@ public static class AuthEndpoints
     {
         var group = endpoints.MapGroup("/api/auth").WithTags("Auth");
 
-        group.MapPost("/register", Register);
-        group.MapPost("/login", Login);
-        group.MapPost("/logout", Logout);
-        group.MapGet("/me", GetCurrentUser).RequireAuthorization();
-        group.MapDelete("/delete-account", DeleteAccount).RequireAuthorization();
-        group.MapPut("/profile", UpdateProfile).RequireAuthorization();
+        group.MapPost("/register", Register)
+            .WithName("Register")
+            .WithSummary("Register")
+            .WithDescription(
+                "Create an account and sign in. On success the server sets the HttpOnly auth cookie, so no separate login is needed. " +
+                "Password: at least 8 characters, with an uppercase letter, a lowercase letter, a digit and a symbol. " +
+                "Email must not already be registered. Display name is optional; if given, it must be unique. " +
+                "`acceptedPrivacyPolicy` must be `true`. Validation errors return 400, keyed by field or by Identity error code.")
+            .Produces<UserResponse>(StatusCodes.Status201Created)
+            .ProducesValidationProblem();
+
+        group.MapPost("/login", Login)
+            .WithName("Login")
+            .WithSummary("Login")
+            .WithDescription(
+                "Sign in with email and password. On success the server sets the HttpOnly auth cookie (valid for 24 hours) " +
+                "and returns the user. A wrong password and an unknown email both return the same 401, " +
+                "so the response does not reveal whether an account exists.")
+            .Produces<UserResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        group.MapPost("/logout", Logout)
+            .WithName("Logout")
+            .WithSummary("Logout")
+            .WithDescription("Sign out by clearing the auth cookie. Always returns 204, even if no one is signed in.")
+            .Produces(StatusCodes.Status204NoContent);
+
+        group.MapGet("/me", GetCurrentUser).RequireAuthorization()
+            .WithName("Get Current User")
+            .WithSummary("Get Current User")
+            .WithDescription(
+                "Return the signed-in user. Use it to check whether the auth cookie is still valid, for example on page load. " +
+                "`displayName` is null if the user never set one. Returns 401 if not signed in, the session has expired, " +
+                "or the account no longer exists. Requires sign-in.")
+            .Produces<UserResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapPut("/profile", UpdateProfile).RequireAuthorization()
+            .WithName("Update Profile")
+            .WithSummary("Update Profile")
+            .WithDescription(
+                "Change the signed-in user's display name. The name is trimmed, must be 2–20 characters, and must not be " +
+                "used by another account (case-insensitive). Returns the updated user. Requires sign-in.")
+            .Produces<UserResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapDelete("/delete-account", DeleteAccount).RequireAuthorization()
+            .WithName("Delete Account")
+            .WithSummary("Delete Account")
+            .WithDescription(
+                "Permanently delete the signed-in user's account and all of their data, including saved favorites, " +
+                "then clear the auth cookie. This cannot be undone. Requires sign-in.")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .ProducesValidationProblem();
+
 
         //TODO: decide if we want to make add this end points as well.
         // group.MapPost("/forgot-password", ForgotPassword);
     }
 
     /// <summary>
-    /// these end points only do jwt for now, will need to make a new genaric interface and add the other Services like OAuth if we want to add other login methods. 
+    /// these end points only do jwt for now, will need to make a new genaric interface and add the other Services like OAuth if we want to add other login methods.
     /// </summary>
     private static async Task<IResult> Register(
         RegisterRequest req,
@@ -41,13 +93,14 @@ public static class AuthEndpoints
         IOptions<JwtOptions> jwtOptions,
         HttpContext context)
     {
-        if(!RequestValidator.TryValidate(req, out var errors))
+        if (!RequestValidator.TryValidate(req, out var errors))
         {
             return Results.ValidationProblem(errors);
         }
 
-        var existingDisplayName = await users.Users.AnyAsync(u => u.DisplayName == req.DisplayName);
-        if (existingDisplayName)
+        var displayName = string.IsNullOrWhiteSpace(req.DisplayName) ? null : req.DisplayName.Trim();
+        if (displayName is not null &&
+            await users.Users.AnyAsync(u => u.DisplayName == displayName))
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
@@ -59,19 +112,18 @@ public static class AuthEndpoints
         {
             Email = req.Email,
             UserName = req.Email,
-            DisplayName = req.DisplayName,
+            DisplayName = displayName,
             PrivacyConsentedAtUtc = DateTime.UtcNow,
         };
 
         var res = await users.CreateAsync(user, req.Password);
 
         ///<summary>
-        /// Groups erros together by their code so no duplicate error messages are returned.
+        /// Groups errors together by their code so no duplicate error messages are returned.
         /// </summary>
-        if(!res.Succeeded)
+        if (!res.Succeeded)
         {
-            return Results.ValidationProblem(res.Errors.GroupBy(e => e.Code).ToDictionary(
-                group => group.Key,
+            return Results.ValidationProblem(res.Errors.GroupBy(e => e.Code.StartsWith("Password") ? "Password" : "Email").ToDictionary(group => group.Key,
                 group => group.Select(e => e.Description).ToArray()
             ));
         }
@@ -80,10 +132,10 @@ public static class AuthEndpoints
         return Results.Created("/api/auth/me", MakeResponse(user));
     }
 
-        ///<summary>
-        /// Simple Auth for getting the user and trying to validate the password.
-        /// we can addd more validations  in the future if needed. eg. login attempts tracking.
-        /// </summary>
+    ///<summary>
+    /// Simple Auth for getting the user and trying to validate the password.
+    /// we can addd more validations  in the future if needed. eg. login attempts tracking.
+    /// </summary>
     private static async Task<IResult> Login(
         LoginRequest req,
         UserManager<AppUser> users,
@@ -91,13 +143,13 @@ public static class AuthEndpoints
         IOptions<JwtOptions> jwtOptions,
         HttpContext context)
     {
-        if(!RequestValidator.TryValidate(req, out var errors))
+        if (!RequestValidator.TryValidate(req, out var errors))
         {
             return Results.ValidationProblem(errors);
         }
 
         var user = await users.FindByEmailAsync(req.Email);
-        if(user == null || !await users.CheckPasswordAsync(user, req.Password))
+        if (user == null || !await users.CheckPasswordAsync(user, req.Password))
         {
             return InvalidCredentials();
         }
@@ -122,7 +174,7 @@ public static class AuthEndpoints
     {
         var id = principal.GetUserId();
 
-        if( id == null)
+        if (id == null)
             return Results.Unauthorized();
 
         var user = await users.FindByIdAsync(id);
@@ -187,8 +239,13 @@ public static class AuthEndpoints
         if (user is null)
             return Results.Unauthorized();
 
-        var existingUser = await users.Users.FirstOrDefaultAsync(u => u.DisplayName == req.DisplayName && u.Id != id);
-        if (existingUser is not null)
+        var displayName = req.DisplayName.Trim();
+
+        if (displayName == user.DisplayName)
+            return Results.Ok(MakeResponse(user));
+
+        var existingUser = await users.Users.AnyAsync(u => u.DisplayName == displayName && u.Id != id);
+        if (existingUser)
         {
             return Results.ValidationProblem(new Dictionary<string, string[]>
             {
@@ -196,7 +253,7 @@ public static class AuthEndpoints
             });
         }
 
-        user.DisplayName = req.DisplayName;
+        user.DisplayName = displayName;
         var result = await users.UpdateAsync(user);
 
         if (!result.Succeeded)
