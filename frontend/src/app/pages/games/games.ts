@@ -1,35 +1,28 @@
-import { Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { GameCard } from '../../shared/game-card/game-card';
 import { GameModel } from '../../core/models/game.model';
-import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { debounceTime, map, Subject } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FilterState, toFilterParams } from '../../core/models/game-filter.model';
 import { GameFilters } from '../../shared/game-filters/game-filters';
 import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
 import { GamesData } from './games-data';
 import { GamesFavorites } from './games-favorites';
+import { GamesQuery } from './games-query';
 
 @Component({
   imports: [GameCard, FormsModule, GameFilters, ScrollControls],
-  providers: [GamesData, GamesFavorites],
+  providers: [GamesData, GamesFavorites, GamesQuery],
   selector: 'app-games',
   styleUrl: './games.scss',
   templateUrl: './games.html',
 })
 
 export class Games implements OnInit {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly data = inject(GamesData);
   private readonly favorites = inject(GamesFavorites);
   private readonly filtersPanel = viewChild(GameFilters);
-  private readonly searchTyped = new Subject<string>();
   private readonly loginDialog = viewChild<ElementRef<HTMLDialogElement>>('loginDialog');
-
-
+  private readonly query = inject(GamesQuery);
 
   loginPrompt = signal<GameModel | null>(null);
   searchInput = '';
@@ -54,36 +47,10 @@ export class Games implements OnInit {
   );
 
   ngOnInit(): void {
-    this.searchTyped.pipe(
-      map(value => value.trim()),
-      debounceTime(300),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe(search => {
-      if (search === this.searchTerm()) return;
-
-      void this.router.navigate(['/games'], {
-        queryParams: this.searchParams(search),
-        queryParamsHandling: 'merge'
-      });
-    });
-
     this.data.initialize(search => {
       if (this.searchInput.trim() !== search) {
         this.searchInput = search;
       }
-    });
-  }
-
-  // updates page and let URL stream reload
-  changePage(page: number): void {
-    if (page < 1 || page > this.totalPages()) return;
-    if (page === this.currentPage()) return;
-
-    void this.router.navigate(['/games'], {
-      queryParams: {
-        page: page === 1 ? null : page
-      },
-      queryParamsHandling: 'merge'
     });
   }
 
@@ -140,61 +107,28 @@ export class Games implements OnInit {
     this.favorites.goToLogin(game.id);
   }
 
-  private searchParams(search: string) {
-    const wasSearching = this.searchTerm() !== '';
-
-    if (search && !wasSearching) {
-      const page = this.currentPage();
-      return { search, page: null, fromPage: page > 1 ? page : null };
-    }
-    if (!search && wasSearching) {
-      return {
-        search: null,
-        page: readFromPage(this.route.snapshot.queryParamMap),
-        fromPage: null
-      };
-    }
-    return { search: search || null, page: null };
-  }
-
-  submitSearch(): void {
-    const search = this.searchInput.trim();
-    const draft = this.filtersPanel()?.filterState ?? this.filterState();
-
-    void this.router.navigate(['/games'], {
-      queryParams: {
-        ...this.searchParams(search),
-        ...toFilterParams(draft)
-      },
-      queryParamsHandling: 'merge'
-    });
-  }
-  onSearchInput(value: string): void {
-    this.searchTyped.next(value);
-  }
-
   retryGames(): void {
     this.data.retry();
   }
 
-  submitFilters(state: FilterState): void {
-    void this.router.navigate(['/games'], {
-      queryParams: {
-        ...toFilterParams(state),
-        page: null,
-        fromPage: null
-      },
-      queryParamsHandling: 'merge'
-    });
+  changePage(page: number): void {
+    this.query.changePage(page);
   }
-  resetFilters(): void {
-    void this.router.navigate(['/games'], {
-      queryParams: { search: this.searchTerm() || null }
-    });
-  }
-}
 
-function readFromPage(params: ParamMap): number | null {
-  const page = Number(params.get('fromPage'));
-  return Number.isSafeInteger(page) && page > 1 ? page : null;
+  submitSearch(): void {
+    const draft = this.filtersPanel()?.filterState ?? this.filterState();
+    this.query.submitSearch(this.searchInput, draft);
+  }
+
+  onSearchInput(value: string): void {
+    this.query.onSearchInput(value);
+  }
+
+  submitFilters(state: FilterState): void {
+    this.query.submitFilters(state);
+  }
+
+  resetFilters(): void {
+    this.query.resetFilters();
+  }
 }
