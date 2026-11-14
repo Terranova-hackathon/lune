@@ -31,14 +31,7 @@
 				[favoriteError]="favoriteError()"
 				(favoriteToggled)="toggleFavorite($event)"
 				/>
-				<section>
-					<h2>About</h2>
-					<p class="game-details__description">{{ g.description || 'No description available.' }}</p>
-					@if (g.storyLine) {
-						<h3>Story</h3>
-						<p>{{ g.storyLine }}</p>
-					}
-				</section>
+				<app-game-description [game]="g" />
 
 				@if (g.screenshots.length) {
 				<app-game-gallery

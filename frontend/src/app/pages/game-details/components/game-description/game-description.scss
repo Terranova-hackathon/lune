@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+section {
+  margin-top: 36px;
+}
+
+h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
+p {
+  line-height: 1.7;
+}
+
+.game-details__description {
+  color: var(--color-muted);
+  white-space: pre-line;
+  line-height: 1.8;
+}
+
+@media (max-width: 576px) {
+  h2 {
+    font-size: 1.2rem;
+  }
+}

@@ -1,4 +1,3 @@
-
 .game-details {
   padding: 40px 20px 80px;
   background: var(--color-background);
@@ -11,11 +10,6 @@
     margin: 0 auto;
   }
 
-    &__hero,
-    &__content {
-     cursor: auto;
-    }
-
   &__back {
     display: inline-flex;
     align-items: center;
@@ -25,7 +19,6 @@
     color: var(--color-primary);
     font-weight: 600;
     text-decoration: none;
-
     transition: color 0.2s ease;
 
     &:hover {
@@ -40,51 +33,19 @@
     }
   }
 
-  // Main details panel
   &__content {
     padding: 36px;
-
     border: 1px solid var(--color-border);
     border-top: none;
     border-radius: 0 0 16px 16px;
-
     background: var(--color-surface);
-
-    h1 {
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 16px;
-    }
-
-    h2 {
-      font-size: 1.4rem;
-      font-weight: 700;
-      margin-bottom: 18px;
-    }
-
-    h3 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-top: 24px;
-      margin-bottom: 12px;
-    }
-
-    section {
-      margin-top: 36px;
-    }
-
-    p {
-      line-height: 1.7;
-    }
+    cursor: auto;
   }
 
-  &__description {
-    color: var(--color-muted);
-    white-space: pre-line;
-    line-height: 1.8;
+  // Loading-state
+  p {
+    line-height: 1.7;
   }
-
 }
 
 @media (max-width: 768px) {
@@ -103,25 +64,6 @@
 
     &__content {
       padding: 20px 16px;
-
-      h1 {
-        font-size: 1.8rem;
-      }
-
-      h2 {
-        font-size: 1.2rem;
-      }
-    }
-
-    &__title-row {
-      gap: 12px;
-      align-items: flex-start;
-    }
-
-    &__favorite {
-      width: 44px;
-      height: 44px;
-      font-size: 1.25rem;
     }
   }
 }

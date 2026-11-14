@@ -15,9 +15,10 @@ import { GameRatings } from './components/game-ratings/game-ratings';
 import { RelatedGames } from './components/related-games/related-games';
 import { GameHero } from './components/game-hero/game-hero';
 import { GameHeading } from './components/game-heading/game-heading';
+import { GameDescription } from './components/game-description/game-description';
 
 @Component({
-  imports: [RouterLink, ScrollControls,GameFacts, GameGallery, GameRatings, RelatedGames, GameHero, GameHeading],
+  imports: [RouterLink, ScrollControls,GameFacts, GameGallery, GameRatings, RelatedGames, GameHero, GameHeading, GameDescription],
   providers: [GameDetailsRelated, GameDetailsFavorites],
   selector: 'app-game-details',
   styleUrl: './game-details.scss',
