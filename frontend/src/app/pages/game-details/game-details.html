@@ -79,117 +79,13 @@
 
 				<app-game-ratings [game]="g" />
 
-				@if (relatedGames(); as relatedPage) {
-					@if (relatedPage.items.length > 0) {
-					  <section class="game-details__related">
-					
-						<div class="game-details__related-header">
-						  <h2>Related Games</h2>
+				<app-related-games
+				  [relatedGames]="relatedGames()"
+				  [relatedLoading]="relatedLoading()"
+				  [relatedError]="relatedError()"
+				  (pageChanged)="changeRelatedPage($event)"
+				/>
 
-						  <span class="game-details__related-count">
-							@if (relatedPage.totalCount > relatedPage.items.length) {
-								Showing {{ relatedPage.items.length }} of {{ relatedPage.totalCount }}
-							} @else {
-								{{ relatedPage.items.length }} {{ relatedPage.items.length === 1 ? 'game' : 'games' }}
-							}
-						  </span>
-						</div>
-					
-						<div class="game-details__related-grid"
-							[class.is-loading]="relatedLoading()"
-						>
-						
-						  @for (related of relatedPage.items; track related.id) {
-							<a
-							  class="game-details__related-card"
-							  [routerLink]="['/games', related.id]"
-							>
-	
-							  <img
-								[src]="related.backgroundImage || 'images/placeholder.png'"
-								[alt]="related.name"
-								loading="lazy"
-							  />
-
-							  <div class="game-details__related-info">
-								<h3>{{ related.name }}</h3>
-
-								<p class="game-details__related-release">
-								  {{ related.released || 'Release unknown' }}
-								</p>
-
-								<div class="game-details__related-rating">
-								  @if (related.rating > 0) {
-									<i
-									  class="bi bi-star-fill"
-									  aria-hidden="true"
-									></i>
-
-									<span>
-									  {{ related.rating | number:'1.1-1' }} / 5
-									</span>
-								  } @else {
-									<span>Not rated</span>
-								  }
-								</div>
-							  </div>
-							</a>
-						  }
-						</div>
-
-						<div class="game-details__pagination-container">
-
-						<div class="game-details__loading-slot" role="status">
-							@if (relatedLoading()) {
-							<span
-								class="spinner-border spinner-border-sm text-primary"
-								aria-hidden="true"
-							></span>
-							<span>Loading related games…</span>
-							}
-						</div>
-
-						@if (relatedPage.totalPages > 1) {
-							<nav
-							class="game-details__related-pagination"
-							aria-label="Related games pagination"
-							>
-							<button
-								type="button"
-								class="game-details__page-button"
-								(click)="changeRelatedPage(relatedPage.page - 1)"
-								[disabled]="relatedLoading() || relatedPage.page <= 1"
-							>
-								<i class="bi bi-chevron-left" aria-hidden="true"></i>
-								Previous
-							</button>
-
-							<span class="game-details__page-indicator">
-								Page {{ relatedPage.page }} of {{ relatedPage.totalPages }}
-							</span>
-
-							<button
-								type="button"
-								class="game-details__page-button"
-								(click)="changeRelatedPage(relatedPage.page + 1)"
-								[disabled]="relatedLoading() || relatedPage.page >= relatedPage.totalPages"
-							>
-								Next
-								<i class="bi bi-chevron-right" aria-hidden="true"></i>
-							</button>
-							</nav>
-						}
-
-						</div>
-
-						@if (relatedError()) {
-							<p class="game-details__related-error" role="alert">
-								{{ relatedError() }}
-							</p>
-						}
-						</section>
-					}
-				}
 			</article>
 		}
 	</div>

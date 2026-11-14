@@ -1,4 +1,4 @@
-import { Component, DestroyRef, effect, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game-service';
 import { catchError, combineLatest, EMPTY, map, startWith, Subject, switchMap, tap } from 'rxjs';
@@ -6,19 +6,16 @@ import { GamesNavigationService } from '../../core/services/games-navigation-ser
 import { GameDetailsModel } from '../../core/models/game.model';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DecimalPipe } from '@angular/common';
-import { AuthService } from '../../core/services/auth-service';
-import { FavoriteService } from '../../core/services/favorite-service';
-import { PriceComparison } from '../../shared/price-comparison/price-comparison';
 import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
 import { GameDetailsRelated } from './game-details-related';
 import { GameDetailsFavorites } from './game-details-favorites';
 import { GameFacts } from './components/game-facts/game-facts';
 import { GameGallery } from './components/game-gallery/game-gallery';
 import { GameRatings } from './components/game-ratings/game-ratings';
+import { RelatedGames } from './components/related-games/related-games';
 
 @Component({
-  imports: [RouterLink, DecimalPipe, ScrollControls,GameFacts, GameGallery, GameRatings],
+  imports: [RouterLink, ScrollControls,GameFacts, GameGallery, GameRatings, RelatedGames],
   providers: [GameDetailsRelated, GameDetailsFavorites],
   selector: 'app-game-details',
   styleUrl: './game-details.scss',
