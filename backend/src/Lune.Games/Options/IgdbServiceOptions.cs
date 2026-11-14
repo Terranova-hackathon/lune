@@ -10,4 +10,8 @@ internal sealed class IgdbServiceOptions
     // The Idgb data base doesnt give me a full url path so i have to build it my self. 
     public string ImageBaseUrl {get; set ;} = "https://images.igdb.com/igdb/image/upload";
     public string VideoBaseUrl { get; set; } = "https://www.youtube.com/watch?v=";
+    public int GameDetailsCacheMinutes { get; set; } = 10;
+    public int SearchCacheMinutes { get; set; } = 5;
+    public int FeaturedCacheMinutes { get; set; } = 10;
+    public int FilterOptionsCacheMinutes { get; set; } = 10;
 }

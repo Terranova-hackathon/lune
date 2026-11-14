@@ -29,18 +29,27 @@ internal sealed class IgdbGamesService(
         var criteria = BuildCriteria(search, filters);
         var order = BuildOrdering(search, filters);
 
+        var cacheKey = $"igdb:search:{criteria}{order}:{page}:{pageSize}";
+        if (cache.TryGetValue(cacheKey, out PagedResult<GameSummary>? cached))
+            return cached!;
+
         var games = await PostAsync<List<IgdbGame>>(
             "games", $"fields {IgdbGameFields.Summary}; {criteria}{order} limit {pageSize}; offset {offset};", cancellationToken);
         var count = await PostAsync<IgdbCount>("games/count", criteria, cancellationToken);
- 
-        return new PagedResult<GameSummary>(
+
+        var result = new PagedResult<GameSummary>(
             (games?.Select(g => _converter.ToSummary(g)) ?? []).ToList(), page, pageSize, count?.Count ?? 0);
+
+        cache.Set(cacheKey, result, TimeSpan.FromMinutes(_options.SearchCacheMinutes));
+        return result;
     }
 
     //Converts the out search params into a IGDB readale parameter. 
     private static string BuildCriteria(string? search, GameSearchFilters? filters)
     {
+        // This actually just make the search faster and doesnt change results significantly.
         var conditions = new List<string> { "first_release_date != null", "total_rating != null" };
+
         if (filters is not null)
         {
             if (filters.Genres.Count > 0)
@@ -49,17 +58,20 @@ internal sealed class IgdbGamesService(
             if (filters.Platforms.Count > 0)
                 conditions.Add($"platforms = ({string.Join(",", filters.Platforms)})");
 
-            if (filters.Developers.Count > 0)
-            {
-                conditions.Add(
-                    $"involved_companies.developer = true & involved_companies.company.slug = ({QuotedValues(filters.Developers)})");
-            }
+            string? developerClause = filters.Developers.Count > 0
+                ? $"involved_companies.developer = true & involved_companies.company.slug = ({QuotedValues(filters.Developers)})"
+                : null;
 
-            if (filters.Publishers.Count > 0)
-            {
-                conditions.Add(
-                    $"involved_companies.publisher = true & involved_companies.company.slug = ({QuotedValues(filters.Publishers)})");
-            }
+            string? publisherClause = filters.Publishers.Count > 0
+                ? $"involved_companies.publisher = true & involved_companies.company.slug = ({QuotedValues(filters.Publishers)})"
+                : null;
+
+            if (developerClause is not null && publisherClause is not null)
+                conditions.Add($"({developerClause} | {publisherClause})");
+            else if (developerClause is not null)
+                conditions.Add(developerClause);
+            else if (publisherClause is not null)
+                conditions.Add(publisherClause);
 
             if (filters.MetacriticMin is not null)
                 conditions.Add($"aggregated_rating >= {filters.MetacriticMin.Value}");
@@ -103,6 +115,10 @@ internal sealed class IgdbGamesService(
     /// </summary>
     public async Task<GameDetails?> GetByIdAsync(int id, int page = 1, int pageSize = 6, CancellationToken cancellationToken = default)
     {
+        var cacheKey = $"igdb:game:{id}:{page}:{pageSize}";
+        if (cache.TryGetValue(cacheKey, out GameDetails? cached))
+            return cached;
+
         var games = await PostAsync<List<IgdbGame>>(
             "games", $"fields {IgdbGameFields.Detail}; where id = {id}; limit 1;", cancellationToken);
 
@@ -111,7 +127,10 @@ internal sealed class IgdbGamesService(
             return null;
 
         var relatedGames = await GetRelatedGamesAsync(game.SimilarGames, page, pageSize, cancellationToken);
-        return _converter.ToDetails(game, relatedGames);
+        var details = _converter.ToDetails(game, relatedGames);
+
+        cache.Set(cacheKey, details, TimeSpan.FromMinutes(_options.GameDetailsCacheMinutes));
+        return details;
     }
 
     /// <summary>
@@ -181,7 +200,7 @@ internal sealed class IgdbGamesService(
     public Task<GameFilterOptions> GetFilterOptionsAsync(CancellationToken cancellationToken = default) =>
         cache.GetOrCreateAsync("igdb:filter-options", async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_options.FilterOptionsCacheMinutes);
 
             var genresTask = PostAsync<List<IgdbNamed>>(
                 "genres", "fields id,name,slug; sort name asc; limit 500;", cancellationToken);
@@ -228,15 +247,18 @@ internal sealed class IgdbGamesService(
             .ToList();
     }
 
-    public async Task<IReadOnlyList<GameDetails>> GetFeaturedAsync(CancellationToken cancellationToken = default)
-    {
-        var candidates = await PostAsync<List<IgdbGame>>(
-            "games",
-            $"fields {IgdbGameFields.Detail},screenshots.image_id; where total_rating_count > 0; sort total_rating_count desc; limit 50;",
-            cancellationToken);
+    public Task<IReadOnlyList<GameDetails>> GetFeaturedAsync(CancellationToken cancellationToken = default) =>
+        cache.GetOrCreateAsync("igdb:featured", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_options.FeaturedCacheMinutes);
 
-        return FeaturedGames.Select(candidates ?? [], game => game.Id)
-            .Select(g => _converter.ToFeatured(g))
-            .ToList();
-    }
+            var candidates = await PostAsync<List<IgdbGame>>(
+                "games",
+                $"fields {IgdbGameFields.Detail},screenshots.image_id; where total_rating_count > 0; sort total_rating_count desc; limit 50;",
+                cancellationToken);
+
+            return (IReadOnlyList<GameDetails>)FeaturedGames.Select(candidates ?? [], game => game.Id)
+                .Select(g => _converter.ToFeatured(g))
+                .ToList();
+        })!;
 }
