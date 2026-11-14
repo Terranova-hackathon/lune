@@ -18,14 +18,8 @@
 				</button>
 	</div>
 		} @else if (game(); as g) {
-			<div class="game-details__hero"
-				[style.background-image]="'url(' + g.backgroundImage + ')'"
-			>
-				<img class="game-details__cover"
-				 [src]="g.cover || g.backgroundImage || 'images/placeholder.png'"
-				 [alt]="g.name + ' cover'" 
-				/>
-			</div>
+			<app-game-hero [game]="g" />
+
 			<article class="game-details__content">
 				<div class="game-details__title-row">
 					<h1>{{ g.name }}</h1>
