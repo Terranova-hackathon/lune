@@ -1,0 +1,41 @@
+info:
+  name: Register - Duplicate Display Name
+  type: http
+  seq: 13
+  tags:
+  - Auth
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/register'
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{$randomEmail}}",
+        "displayName": "{{runName}}",
+        "password": "{{password}}",
+        "acceptedPrivacyPolicy": true
+      }
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      function hasErrorKey(body, name) {
+        const keys = Object.keys((body && body.errors) || {});
+        return keys.some(k => k.toLowerCase() === name.toLowerCase());
+      }
+
+      test('returns 400', () => {
+        expect(res.status).to.equal(400);
+      });
+
+      test('reports an error for DisplayName', () => {
+        expect(hasErrorKey(res.body, 'DisplayName'), JSON.stringify(res.body.errors)).to.equal(true);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

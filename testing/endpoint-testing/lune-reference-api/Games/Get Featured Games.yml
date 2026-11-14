@@ -1,44 +1,161 @@
 info:
   name: Get Featured Games
   type: http
-  seq: 5
+  seq: 19
   tags:
-    - Games
-
+  - Games
 http:
   method: GET
-  url: "{{baseUrl}}/api/games/featured"
+  url: '{{baseUrl}}/api/games/featured'
   auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
 
+      test('returns up to 10 games', () => {
+        expect(res.body).to.be.an('array').that.is.not.empty;
+        expect(res.body.length).to.be.at.most(10);
+      });
+
+      test('relatedGames is always empty', () => {
+        res.body.forEach(g => expect(g.relatedGames.items, g.name).to.be.an('array').that.is.empty);
+      });
+
+      test('no duplicate games', () => {
+        const ids = res.body.map(g => g.id);
+        expect(new Set(ids).size).to.equal(ids.length);
+      });
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
   forwardAuthorizationHeader: true
-
 examples:
-  - name: 200 Response
-    description: OK
-    request:
-      url: "{{baseUrl}}/api/games/featured"
-      method: GET
-    response:
-      status: 200
-      statusText: OK
-      body:
-        type: text
-        data: ""
-  - name: 503 Response
-    description: Service Unavailable
-    request:
-      url: "{{baseUrl}}/api/games/featured"
-      method: GET
-    response:
-      status: 503
-      statusText: Service Unavailable
-      body:
-        type: text
-        data: ""
-
-docs: Retrieve featured games
+- name: 200 Response
+  description: OK
+  request:
+    url: '{{baseUrl}}/api/games/featured'
+    method: GET
+  response:
+    status: 200
+    statusText: OK
+    headers:
+    - name: Content-Type
+      value: application/json
+    body:
+      type: json
+      data: |-
+        [
+          {
+            "id": "",
+            "name": "",
+            "released": "",
+            "backgroundImage": "",
+            "cover": "",
+            "rating": "",
+            "metacritic": "",
+            "description": "",
+            "storyLine": "",
+            "website": "",
+            "externalGames": [
+              {
+                "source": "",
+                "uid": "",
+                "url": ""
+              }
+            ],
+            "genres": [
+              {
+                "value": "",
+                "name": ""
+              }
+            ],
+            "platforms": [
+              {
+                "value": "",
+                "name": ""
+              }
+            ],
+            "developers": [
+              {
+                "value": "",
+                "name": ""
+              }
+            ],
+            "publishers": [
+              {
+                "value": "",
+                "name": ""
+              }
+            ],
+            "screenshots": [],
+            "artworks": [],
+            "videos": [],
+            "relatedGames": {
+              "items": [
+                {
+                  "id": "",
+                  "name": "",
+                  "released": "",
+                  "backgroundImage": "",
+                  "rating": "",
+                  "metacritic": "",
+                  "genres": [
+                    {
+                      "value": "",
+                      "name": ""
+                    }
+                  ],
+                  "platforms": [
+                    {
+                      "value": "",
+                      "name": ""
+                    }
+                  ]
+                }
+              ],
+              "page": "",
+              "pageSize": "",
+              "totalCount": "",
+              "totalPages": ""
+            }
+          }
+        ]
+- name: 404 Response
+  description: Not Found
+  request:
+    url: '{{baseUrl}}/api/games/featured'
+    method: GET
+  response:
+    status: 404
+    statusText: Not Found
+    body:
+      type: text
+      data: ''
+- name: 503 Response
+  description: Service Unavailable
+  request:
+    url: '{{baseUrl}}/api/games/featured'
+    method: GET
+  response:
+    status: 503
+    statusText: Service Unavailable
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": ""
+        }
+docs: 10 games picked at random from the 50 most-rated on Game Database, for the home page.The selection changes on every call. Each item has the same shape as `GET /api/games/{id}`, but `relatedGames` is always empty and `backgroundImage` is the game's first 1080p screenshot (or its cover).

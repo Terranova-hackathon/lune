@@ -1,0 +1,10 @@
+info:
+  name: Favorites
+  type: folder
+
+request:
+  auth: inherit
+
+docs:
+  content: The signed-in user's saved games, up to 1,000 per user. Requires sign-in.
+  type: text/markdown

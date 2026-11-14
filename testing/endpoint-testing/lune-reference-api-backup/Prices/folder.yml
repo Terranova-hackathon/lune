@@ -1,0 +1,10 @@
+info:
+  name: Prices
+  type: folder
+
+request:
+  auth: inherit
+
+docs:
+  content: Current and lowest-recorded prices on Steam and GG.deals, for games sold on Steam. Italian region only.
+  type: text/markdown

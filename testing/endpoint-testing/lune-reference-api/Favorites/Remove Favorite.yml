@@ -1,0 +1,64 @@
+info:
+  name: Remove Favorite
+  type: http
+  seq: 16
+  tags:
+  - Favorites
+http:
+  method: DELETE
+  url: '{{baseUrl}}/api/favorites/:Id'
+  params:
+  - name: Id
+    value: '{{nonSteamGameId}}'
+    type: path
+  auth: inherit
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 204', () => {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 204 Response
+  description: No Content
+  request:
+    url: '{{baseUrl}}/api/favorites/:Id'
+    method: DELETE
+    params:
+    - name: Id
+      value: ''
+      type: path
+      description: Game Database ID to remove.
+  response:
+    status: 204
+    statusText: No Content
+    body:
+      type: text
+      data: ''
+- name: 401 Response
+  description: Unauthorized
+  request:
+    url: '{{baseUrl}}/api/favorites/:Id'
+    method: DELETE
+    params:
+    - name: Id
+      value: ''
+      type: path
+      description: Game Database ID to remove.
+  response:
+    status: 401
+    statusText: Unauthorized
+    body:
+      type: text
+      data: ''
+docs: 'Remove a game from the signed-in user''s favorites. Safe to repeat: returns 204 whether or not the game was saved. Requires sign-in.'

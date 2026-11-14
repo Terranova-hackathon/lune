@@ -1,0 +1,130 @@
+info:
+  name: Search Companies
+  type: http
+  seq: 4
+  tags:
+    - Games
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/games/companies"
+  params:
+    - name: kind
+      value: ""
+      type: query
+      description: Required. `developer` or `publisher`.
+      disabled: true
+    - name: search
+      value: ""
+      type: query
+      description: "Required. Part of the company name, 2–60 characters. Example: `ubi`."
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/games/companies"
+      method: GET
+      params:
+        - name: kind
+          value: ""
+          type: query
+          description: Required. `developer` or `publisher`.
+          disabled: true
+        - name: search
+          value: ""
+          type: query
+          description: "Required. Part of the company name, 2–60 characters. Example: `ubi`."
+          disabled: true
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          [
+            {
+              "slug": "",
+              "name": "",
+              "gamesCount": ""
+            }
+          ]
+  - name: 400 Response
+    description: Bad Request
+    request:
+      url: "{{baseUrl}}/api/games/companies"
+      method: GET
+      params:
+        - name: kind
+          value: ""
+          type: query
+          description: Required. `developer` or `publisher`.
+          disabled: true
+        - name: search
+          value: ""
+          type: query
+          description: "Required. Part of the company name, 2–60 characters. Example: `ubi`."
+          disabled: true
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: application/problem+json
+      body:
+        type: json
+        data: |-
+          {
+            "type": "",
+            "title": "",
+            "status": "",
+            "detail": "",
+            "instance": "",
+            "errors": {}
+          }
+  - name: 503 Response
+    description: Service Unavailable
+    request:
+      url: "{{baseUrl}}/api/games/companies"
+      method: GET
+      params:
+        - name: kind
+          value: ""
+          type: query
+          description: Required. `developer` or `publisher`.
+          disabled: true
+        - name: search
+          value: ""
+          type: query
+          description: "Required. Part of the company name, 2–60 characters. Example: `ubi`."
+          disabled: true
+    response:
+      status: 503
+      statusText: Service Unavailable
+      headers:
+        - name: Content-Type
+          value: application/problem+json
+      body:
+        type: json
+        data: |-
+          {
+            "type": "",
+            "title": "",
+            "status": "",
+            "detail": "",
+            "instance": ""
+          }
+
+docs: Find developers or publishers by name, for example to fill a filter autocomplete. Matches anywhere in the name, case-insensitive. Returns up to 10 companies, those with the most games first. Pass a result's `slug` to the `developers` or `publishers` parameter of `GET /api/games`.

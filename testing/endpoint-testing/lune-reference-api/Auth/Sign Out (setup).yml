@@ -1,0 +1,35 @@
+info:
+  name: Sign Out (setup)
+  type: http
+  seq: 1
+  tags:
+  - Auth
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/logout'
+  auth: inherit
+runtime:
+  scripts:
+  - type: before-request
+    code: |-
+      // Unique test users for this run, so the collection can be run repeatedly.
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      bru.setVar('runEmail', `lune.${id}@test.com`);
+      bru.setVar('runEmail2', `lune.${id}.2@test.com`);
+      bru.setVar('runEmail3', `lune.${id}.3@test.com`);
+      bru.setVar('runName', `u${id}`);       // 12 characters
+      bru.setVar('runNameNew', `n${id}`);    // 12 characters
+  - type: after-response
+    code: |-
+      bru.setVar('token', '');
+  - type: tests
+    code: |-
+      test('returns 204', () => {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

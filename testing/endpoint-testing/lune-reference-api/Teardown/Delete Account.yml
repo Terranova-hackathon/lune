@@ -1,0 +1,75 @@
+info:
+  name: Delete Account
+  type: http
+  seq: 1
+  tags:
+  - Auth
+http:
+  method: DELETE
+  url: '{{baseUrl}}/api/auth/delete-account'
+  auth: inherit
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+runtime:
+  scripts:
+  - type: after-response
+    code: |-
+      bru.setVar('token', '');
+  - type: tests
+    code: |-
+      test('returns 204', () => {
+        expect(res.status).to.equal(204);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 204 Response
+  description: No Content
+  request:
+    url: '{{baseUrl}}/api/auth/delete-account'
+    method: DELETE
+  response:
+    status: 204
+    statusText: No Content
+    body:
+      type: text
+      data: ''
+- name: 400 Response
+  description: Bad Request
+  request:
+    url: '{{baseUrl}}/api/auth/delete-account'
+    method: DELETE
+  response:
+    status: 400
+    statusText: Bad Request
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": "",
+          "errors": {}
+        }
+- name: 401 Response
+  description: Unauthorized
+  request:
+    url: '{{baseUrl}}/api/auth/delete-account'
+    method: DELETE
+  response:
+    status: 401
+    statusText: Unauthorized
+    body:
+      type: text
+      data: ''
+docs: Permanently delete the signed-in user's account and all of their data, including saved favorites, then clear the auth cookie. This cannot be undone. Requires sign-in.

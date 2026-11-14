@@ -1,0 +1,25 @@
+info:
+  name: Logout - Already Signed Out
+  type: http
+  seq: 30
+  tags:
+  - Auth
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/logout'
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 204', () => {
+        expect(res.status).to.equal(204);
+      });
+
+      // Logout always succeeds, even with no session.
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

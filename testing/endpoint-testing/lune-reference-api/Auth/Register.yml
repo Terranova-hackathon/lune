@@ -1,0 +1,119 @@
+info:
+  name: Register
+  type: http
+  seq: 11
+  tags:
+  - Auth
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/register'
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{runEmail}}",
+        "displayName": "{{runName}}",
+        "password": "{{password}}",
+        "acceptedPrivacyPolicy": true
+      }
+  auth: inherit
+runtime:
+  scripts:
+  - type: after-response
+    code: |-
+      // Keep the auth cookie so later requests can send it explicitly.
+      const raw = res.headers['set-cookie'];
+      const cookies = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      const auth = cookies.find(c => c.startsWith('Lune_auth='));
+      if (auth) bru.setVar('token', auth.split(';')[0].substring('Lune_auth='.length));
+  - type: tests
+    code: |-
+      test('returns 201', () => {
+        expect(res.status).to.equal(201);
+      });
+
+      test('returns the user shape', () => {
+        expect(res.body.id).to.be.a('string').and.not.be.empty;
+        expect(res.body).to.have.property('email');
+        expect(res.body).to.have.property('displayName');
+      });
+
+      test('returns the new user', () => {
+        expect(res.body.email).to.equal(bru.getVar('runEmail'));
+        expect(res.body.displayName).to.equal(bru.getVar('runName'));
+      });
+
+      test('Location points to /api/auth/me', () => {
+        expect(res.headers.location).to.match(/\/api\/auth\/me$/);
+      });
+
+      test('sets the auth cookie', () => {
+        expect(bru.getVar('token'), 'Lune_auth cookie').to.be.a('string').and.not.be.empty;
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 201 Response
+  description: Created
+  request:
+    url: '{{baseUrl}}/api/auth/register'
+    method: POST
+    body:
+      type: json
+      data: |-
+        {
+          "email": "",
+          "password": "",
+          "displayName": "",
+          "acceptedPrivacyPolicy": false
+        }
+  response:
+    status: 201
+    statusText: Created
+    headers:
+    - name: Content-Type
+      value: application/json
+    body:
+      type: json
+      data: |-
+        {
+          "id": "",
+          "email": "",
+          "displayName": ""
+        }
+- name: 400 Response
+  description: Bad Request
+  request:
+    url: '{{baseUrl}}/api/auth/register'
+    method: POST
+    body:
+      type: json
+      data: |-
+        {
+          "email": "",
+          "password": "",
+          "displayName": "",
+          "acceptedPrivacyPolicy": false
+        }
+  response:
+    status: 400
+    statusText: Bad Request
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": "",
+          "errors": {}
+        }
+docs: 'Create an account and sign in. On success the server sets the HttpOnly auth cookie, so no separate login is needed. Password: at least 8 characters, with an uppercase letter, a lowercase letter, a digit and a symbol. Email must not already be registered. Display name is optional; if given, it must be unique. `acceptedPrivacyPolicy` must be `true`. Validation errors return 400, keyed by field or by Identity error code.'

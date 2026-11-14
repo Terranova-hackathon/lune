@@ -1,0 +1,10 @@
+info:
+  name: Health
+  type: folder
+
+request:
+  auth: inherit
+
+docs:
+  content: Checks for monitoring and Docker.
+  type: text/markdown

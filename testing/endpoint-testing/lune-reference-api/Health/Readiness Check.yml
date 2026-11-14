@@ -1,0 +1,52 @@
+info:
+  name: Readiness Check
+  type: http
+  seq: 2
+  tags:
+  - Health
+http:
+  method: GET
+  url: '{{baseUrl}}/health/ready'
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('database check is healthy', () => {
+        expect(res.body.status).to.equal('Healthy');
+        expect(res.body.checks).to.have.property('database', 'Healthy');
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 200 Response
+  description: OK
+  request:
+    url: '{{baseUrl}}/health/ready'
+    method: GET
+  response:
+    status: 200
+    statusText: OK
+    body:
+      type: text
+      data: ''
+- name: 503 Response
+  description: Service Unavailable
+  request:
+    url: '{{baseUrl}}/health/ready'
+    method: GET
+  response:
+    status: 503
+    statusText: Service Unavailable
+    body:
+      type: text
+      data: ''
+docs: 'Checks that the API can reach its database. Returns 200 with `status: Healthy` when ready, or 503 with the failing check when not. Use for readiness probes; `/health` only checks that the process is up.'

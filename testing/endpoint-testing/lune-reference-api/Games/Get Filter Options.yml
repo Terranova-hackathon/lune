@@ -1,44 +1,104 @@
 info:
   name: Get Filter Options
   type: http
-  seq: 3
+  seq: 10
   tags:
-    - Games
-
+  - Games
 http:
   method: GET
-  url: "{{baseUrl}}/api/games/filters"
+  url: '{{baseUrl}}/api/games/filters'
   auth: inherit
+runtime:
+  scripts:
+  - type: after-response
+    code: |-
+      // Save a real genre slug for the filtered search.
+      if (res.status === 200 && res.body.genres.length) bru.setVar('genreSlug', res.body.genres[0].value);
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
 
+      test('returns genres, platforms and orderings', () => {
+        ['genres', 'platforms', 'orderings'].forEach(k => {
+          expect(res.body[k], k).to.be.an('array').that.is.not.empty;
+          res.body[k].forEach(o => {
+            expect(o.value).to.be.a('string');
+            expect(o.name).to.be.a('string');
+          });
+        });
+      });
+
+      test('orderings are the six documented sort orders', () => {
+        const values = res.body.orderings.map(o => o.value).sort();
+        expect(values).to.deep.equal(['-added', '-metacritic', '-rating', '-released', 'name', 'released']);
+      });
+
+      test('platform values are numeric IDs and include PC (6)', () => {
+        res.body.platforms.forEach(p => expect(p.value).to.match(/^\d+$/));
+        expect(res.body.platforms.map(p => p.value)).to.include('6');
+      });
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
   forwardAuthorizationHeader: true
-
 examples:
-  - name: 200 Response
-    description: OK
-    request:
-      url: "{{baseUrl}}/api/games/filters"
-      method: GET
-    response:
-      status: 200
-      statusText: OK
-      body:
-        type: text
-        data: ""
-  - name: 503 Response
-    description: Service Unavailable
-    request:
-      url: "{{baseUrl}}/api/games/filters"
-      method: GET
-    response:
-      status: 503
-      statusText: Service Unavailable
-      body:
-        type: text
-        data: ""
-
-docs: Retrieve all available filter options for games
+- name: 200 Response
+  description: OK
+  request:
+    url: '{{baseUrl}}/api/games/filters'
+    method: GET
+  response:
+    status: 200
+    statusText: OK
+    headers:
+    - name: Content-Type
+      value: application/json
+    body:
+      type: json
+      data: |-
+        {
+          "genres": [
+            {
+              "value": "",
+              "name": ""
+            }
+          ],
+          "platforms": [
+            {
+              "value": "",
+              "name": ""
+            }
+          ],
+          "orderings": [
+            {
+              "value": "",
+              "name": ""
+            }
+          ]
+        }
+- name: 503 Response
+  description: Service Unavailable
+  request:
+    url: '{{baseUrl}}/api/games/filters'
+    method: GET
+  response:
+    status: 503
+    statusText: Service Unavailable
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": ""
+        }
+docs: Everything the search filters accept, for building the filter UI. Each option has a `value` to send and a `name` to display. `genres` lists all Game Database genres(value = slug, for the `genres` parameter).`platforms` lists the platforms Lune supports (value = platform ID, for the `platforms` parameter). `orderings` lists the sort orders for the `ordering` parameter. Cached on the server for 12 hours.

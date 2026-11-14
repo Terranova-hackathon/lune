@@ -1,0 +1,10 @@
+info:
+  name: Auth
+  type: folder
+
+request:
+  auth: inherit
+
+docs:
+  content: Create an account, sign in and out, and manage the signed-in user's profile.
+  type: text/markdown

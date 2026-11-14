@@ -1,0 +1,132 @@
+info:
+  name: List Favorites
+  type: http
+  seq: 12
+  tags:
+  - Favorites
+http:
+  method: GET
+  url: '{{baseUrl}}/api/favorites'
+  params:
+  - name: page
+    value: '1'
+    type: query
+  - name: pageSize
+    value: '20'
+    type: query
+  auth: inherit
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('returns a paged result', () => {
+        const b = res.body;
+        expect(b).to.have.property('items').that.is.an('array');
+        ['page', 'pageSize', 'totalCount', 'totalPages'].forEach(k => expect(b[k], k).to.be.a('number'));
+        expect(b.items.length).to.be.at.most(b.pageSize);
+        expect(b.totalPages).to.equal(b.pageSize > 0 ? Math.ceil(b.totalCount / b.pageSize) : 0);
+      });
+
+      test('items have the game summary shape', () => {
+        res.body.items.forEach(g => {
+          expect(g.id).to.be.a('number');
+          expect(g.name).to.be.a('string');
+          expect(g.genres).to.be.an('array');
+          expect(g.platforms).to.be.an('array');
+        });
+      });
+
+      test('contains both saved games', () => {
+        expect(res.body.totalCount).to.equal(2);
+      });
+
+      test('newest first', () => {
+        expect(res.body.items[0].id).to.equal(Number(bru.getEnvVar('nonSteamGameId')));
+        expect(res.body.items[1].id).to.equal(Number(bru.getEnvVar('gameId')));
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 200 Response
+  description: OK
+  request:
+    url: '{{baseUrl}}/api/favorites'
+    method: GET
+    params:
+    - name: page
+      value: '1'
+      type: query
+      description: Page number, starting at 1.
+    - name: pageSize
+      value: '20'
+      type: query
+      description: Results per page, 1–40. Default 20.
+  response:
+    status: 200
+    statusText: OK
+    headers:
+    - name: Content-Type
+      value: application/json
+    body:
+      type: json
+      data: |-
+        {
+          "items": [
+            {
+              "id": "",
+              "name": "",
+              "released": "",
+              "backgroundImage": "",
+              "rating": "",
+              "metacritic": "",
+              "genres": [
+                {
+                  "value": "",
+                  "name": ""
+                }
+              ],
+              "platforms": [
+                {
+                  "value": "",
+                  "name": ""
+                }
+              ]
+            }
+          ],
+          "page": "",
+          "pageSize": "",
+          "totalCount": "",
+          "totalPages": ""
+        }
+- name: 401 Response
+  description: Unauthorized
+  request:
+    url: '{{baseUrl}}/api/favorites'
+    method: GET
+    params:
+    - name: page
+      value: '1'
+      type: query
+      description: Page number, starting at 1.
+    - name: pageSize
+      value: '20'
+      type: query
+      description: Results per page, 1–40. Default 20.
+  response:
+    status: 401
+    statusText: Unauthorized
+    body:
+      type: text
+      data: ''
+docs: The signed-in user's saved games, newest first, in the same shape as search results. Game details are a copy taken when the game was saved, so they still load if Game Database is unavailable but may not reflect later changes. Requires sign-in.
