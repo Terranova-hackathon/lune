@@ -12,10 +12,11 @@ import { FavoriteService } from '../../core/services/favorite-service';
 import { PriceComparison } from '../../shared/price-comparison/price-comparison';
 import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
 import { GameDetailsRelated } from './game-details-related';
+import { GameDetailsFavorites } from './game-details-favorites';
 
 @Component({
   imports: [RouterLink, DecimalPipe, PriceComparison, ScrollControls],
-  providers: [GameDetailsRelated],
+  providers: [GameDetailsRelated, GameDetailsFavorites],
   selector: 'app-game-details',
   styleUrl: './game-details.scss',
   templateUrl: './game-details.html',
@@ -28,54 +29,23 @@ export class GameDetails implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly retryRequest = new Subject<void>();
   private readonly related = inject(GameDetailsRelated);
-  private readonly auth = inject(AuthService);
-  private readonly favoriteService = inject(FavoriteService);
+  private readonly favorites = inject(GameDetailsFavorites);
 
   readonly gamesNavigation = inject(GamesNavigationService);
   private pressStartedOnBackdrop = false;
   readonly relatedGames = this.related.games;
   readonly relatedLoading = this.related.loading;
   readonly relatedError = this.related.error;
-  readonly isLoggedIn = this.auth.isLoggedIn;
-  readonly favoriteIds = this.favoriteService.favoriteIds;
+  readonly isLoggedIn = this.favorites.isLoggedIn;
+  readonly favoriteIds = this.favorites.favoriteIds;
+  readonly favoritesReady = this.favorites.ready;
+  readonly favoriteBusyIds = this.favorites.busyIds;
+  readonly favoriteError = this.favorites.error;
 
   game = signal<GameDetailsModel | null>(null);
   loading = signal(true);
   error = signal('');
   selectedShot = signal<string | null>(null);
-  favoritesReady = signal(false);
-  favoriteBusyIds = signal<Set<number>>(new Set());
-  favoriteError = signal('');
-
-  constructor() {
-    effect(onCleanup => {
-      if (!this.isLoggedIn()) {
-        this.favoritesReady.set(false);
-        this.favoriteError.set('');
-        this.favoriteService.clear();
-        return;
-      }
-
-      this.favoritesReady.set(false);
-      this.favoriteError.set('');
-
-      const subscription = this.favoriteService
-        .loadFavoriteIds()
-        .subscribe({
-          next: () => {
-            this.favoritesReady.set(true);
-            this.completePendingFavorite();
-          },
-          error: () => {
-            this.favoriteError.set(
-              'Could not load your favorite games.'
-            );
-          }
-        });
-
-      onCleanup(() => subscription.unsubscribe());
-    });
-  }
 
   ngOnInit(): void {
     const id$ = this.route.paramMap.pipe(
@@ -93,6 +63,7 @@ export class GameDetails implements OnInit {
         this.selectedShot.set(null);
         this.game.set(null);
         this.related.reset();
+        this.favorites.reset();
       }),
       switchMap(id =>
         this.gameService.fetchGameDetails(id).pipe(
@@ -113,7 +84,7 @@ export class GameDetails implements OnInit {
       this.game.set(game);
       this.related.initialize(game);
       this.loading.set(false);
-      this.completePendingFavorite();
+      this.favorites.initialize(game.id);
     });
   }
   retry(): void {
@@ -146,103 +117,7 @@ export class GameDetails implements OnInit {
   changeRelatedPage(page: number): void {
     this.related.changePage(page);
   }
-
   toggleFavorite(id: number): void {
-    if (!this.isLoggedIn()) {
-      this.favoriteService.setPendingFavorite(id);
-
-      const returnUrl = this.router.serializeUrl(
-        this.router.createUrlTree(['/games', id])
-      );
-
-      void this.router.navigate(['/login'], {
-        queryParams: { returnUrl }
-      });
-
-      return;
-    }
-
-    if (!this.favoritesReady()) {
-      return;
-    }
-
-    if (this.favoriteBusyIds().has(id)) {
-      return;
-    }
-
-    this.favoriteError.set('');
-
-    this.favoriteBusyIds.update(ids =>
-      new Set([...ids, id])
-    );
-
-    const request = this.favoriteIds().has(id)
-      ? this.favoriteService.removeFavorite(id)
-      : this.favoriteService.addFavorite(id);
-
-    request.pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: () => {
-        this.clearFavoriteBusy(id);
-      },
-
-      error: (err: HttpErrorResponse) => {
-        this.clearFavoriteBusy(id);
-
-        // Avoid displaying an old game's error
-        // after navigating to another game.
-        if (this.game()?.id !== id) {
-          return;
-        }
-
-        if (err.status === 409) {
-          this.favoriteError.set(
-            'You have reached your Favorites limit.'
-          );
-        } else if (err.status === 401) {
-          this.favoriteError.set(
-            'Your session has expired. Please log in again.'
-          );
-        } else {
-          this.favoriteError.set(
-            'Could not update Favorites. Please try again.'
-          );
-        }
-      }
-    });
+    this.favorites.toggle(id);
   }
-  private clearFavoriteBusy(id: number): void {
-    this.favoriteBusyIds.update(ids => {
-      const updated = new Set(ids);
-      updated.delete(id);
-      return updated;
-    });
-  }
-
-  private completePendingFavorite(): void {
-    const currentGame = this.game();
-
-    if (!this.isLoggedIn() || !this.favoritesReady()) {
-      return;
-    }
-
-    if (!currentGame) {
-      return;
-    }
-
-    const pendingId =
-      this.favoriteService.takePendingFavorite();
-
-    if (pendingId !== currentGame.id) {
-      return;
-    }
-
-    if (this.favoriteIds().has(pendingId)) {
-      return;
-    }
-
-    this.toggleFavorite(pendingId);
-  }
-
 }

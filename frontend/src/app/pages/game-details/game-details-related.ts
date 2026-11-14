@@ -1,11 +1,11 @@
-import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { DestroyRef, inject, Injectable, Service, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, EMPTY, map, Subject, switchMap } from 'rxjs';
 import { GameService } from '../../core/services/game-service';
 import { GameDetailsModel, GameModel } from '../../core/models/game.model';
 import { PagedResult } from '../../core/models/paged-result.model';
 
-@Injectable()
+@Service({ autoProvided: false })
 export class GameDetailsRelated {
   private readonly gameService = inject(GameService);
   private readonly destroyRef = inject(DestroyRef);
