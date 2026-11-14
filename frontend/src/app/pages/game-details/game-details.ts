@@ -15,9 +15,10 @@ import { GameDetailsRelated } from './game-details-related';
 import { GameDetailsFavorites } from './game-details-favorites';
 import { GameFacts } from './components/game-facts/game-facts';
 import { GameGallery } from './components/game-gallery/game-gallery';
+import { GameRatings } from './components/game-ratings/game-ratings';
 
 @Component({
-  imports: [RouterLink, DecimalPipe, PriceComparison, ScrollControls,GameFacts, GameGallery],
+  imports: [RouterLink, DecimalPipe, ScrollControls,GameFacts, GameGallery, GameRatings],
   providers: [GameDetailsRelated, GameDetailsFavorites],
   selector: 'app-game-details',
   styleUrl: './game-details.scss',
@@ -90,9 +91,7 @@ export class GameDetails implements OnInit {
   retry(): void {
     this.retryRequest.next();
   }
-  metacriticClass(score: number): string {
-	  return score >= 75 ? 'good' : score >= 50 ? 'mixed' : 'bad';
-  }
+
   onBackdropPointerDown(event: PointerEvent): void {
   this.pressStartedOnBackdrop = this.isBackdrop(event);
 }
