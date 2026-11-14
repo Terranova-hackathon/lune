@@ -87,60 +87,7 @@
 						</div>
 					</section>
 				}
-
-				<dl class="game-details__facts">
-					<dt>Genres</dt>
-					<dd>
-						@for (genre of g.genres; track genre.value) {
-							<a
-								class="chip"
-								[routerLink]="['/games']"
-								[queryParams]="{ genres: genre.value }"
-							>{{ genre.name }}</a>
-						} @empty {
-							Unknown
-						}
-					</dd>
-
-					<dt>Platforms</dt>
-					<dd>
-						@for (platform of g.platforms; track platform.value) {
-							<a
-								class="chip"
-								[routerLink]="['/games']"
-								[queryParams]="{ platforms: platform.value }"
-							>{{ platform.name }}</a>
-						} @empty {
-							Unknown
-						}
-					</dd>
-
-					<dt>{{ g.developers.length > 1 ? 'Developers' : 'Developer' }}</dt>
-					<dd>
-						@for (developer of g.developers; track developer.value) {
-							<a
-								class="chip"
-								[routerLink]="['/games']"
-								[queryParams]="{ developers: developer.value }"
-							>{{ developer.name }}</a>
-						} @empty {
-							Unknown
-						}
-					</dd>
-
-					<dt>{{ g.publishers.length > 1 ? 'Publishers' : 'Publisher' }}</dt>
-					<dd>
-						@for (publisher of g.publishers; track publisher.value) {
-							<a
-								class="chip"
-								[routerLink]="['/games']"
-								[queryParams]="{ publishers: publisher.value }"
-							>{{ publisher.name }}</a>
-						} @empty {
-							Unknown
-						}
-					</dd>
-				</dl>
+				<app-game-facts [game]="g" />
 
 				<div class="game-details__ratings-prices">
 					<div class="game-details__scores">

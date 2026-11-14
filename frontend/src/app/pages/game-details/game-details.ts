@@ -13,9 +13,10 @@ import { PriceComparison } from '../../shared/price-comparison/price-comparison'
 import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
 import { GameDetailsRelated } from './game-details-related';
 import { GameDetailsFavorites } from './game-details-favorites';
+import { GameFacts } from './components/game-facts/game-facts';
 
 @Component({
-  imports: [RouterLink, DecimalPipe, PriceComparison, ScrollControls],
+  imports: [RouterLink, DecimalPipe, PriceComparison, ScrollControls,GameFacts],
   providers: [GameDetailsRelated, GameDetailsFavorites],
   selector: 'app-game-details',
   styleUrl: './game-details.scss',
