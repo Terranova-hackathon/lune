@@ -1,47 +1,43 @@
-import { Component, computed, DestroyRef, effect, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { GameCard } from '../../shared/game-card/game-card';
 import { GameModel } from '../../core/models/game.model';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
-import { FavoriteService } from '../../core/services/favorite-service';
 import { FormsModule } from '@angular/forms';
 import { debounceTime, map, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AuthService } from '../../core/services/auth-service';
 import { FilterState, toFilterParams } from '../../core/models/game-filter.model';
 import { GameFilters } from '../../shared/game-filters/game-filters';
 import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
 import { GamesData } from './games-data';
+import { GamesFavorites } from './games-favorites';
 
 @Component({
   imports: [GameCard, FormsModule, GameFilters, ScrollControls],
-  providers: [GamesData],
+  providers: [GamesData, GamesFavorites],
   selector: 'app-games',
   styleUrl: './games.scss',
   templateUrl: './games.html',
 })
 
 export class Games implements OnInit {
-  private readonly favoriteService = inject(FavoriteService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly auth = inject(AuthService);
   private readonly data = inject(GamesData);
-// return an instance of app-game-filters from wthich we can read the filterstate and monitor changes
+  private readonly favorites = inject(GamesFavorites);
   private readonly filtersPanel = viewChild(GameFilters);
-// Emits on every keystroke in the searchbox (even the x button)
   private readonly searchTyped = new Subject<string>();
   private readonly loginDialog = viewChild<ElementRef<HTMLDialogElement>>('loginDialog');
 
-  readonly favoriteIds = this.favoriteService.favoriteIds;
-  readonly isLoggedIn = this.auth.isLoggedIn;
+
 
   loginPrompt = signal<GameModel | null>(null);
-  favoritesReady = signal(false);
-  favoriteBusyIds = signal<Set<number>>(new Set());
-  favoriteError = signal('');
   searchInput = '';
+  readonly favoriteIds = this.favorites.favoriteIds;
+  readonly isLoggedIn = this.favorites.isLoggedIn;
+  readonly favoritesReady = this.favorites.ready;
+  readonly favoriteBusyIds = this.favorites.busyIds;
+  readonly favoriteError = this.favorites.error;
   readonly pageSize = this.data.pageSize;
   readonly games = this.data.games;
   readonly currentPage = this.data.currentPage;
@@ -56,32 +52,6 @@ export class Games implements OnInit {
     Object.values(toFilterParams(this.filterState()))
       .some(value => value !== null)
   );
-
-  constructor() {
-    effect((onCleanUp) => {
-      if (!this.isLoggedIn()) {
-        this.favoritesReady.set(false);
-        this.favoriteError.set('');
-        this.favoriteService.clear();
-        return;
-      }
-      this.favoritesReady.set(false);
-      this.favoriteError.set('');
-      const subscription = this.favoriteService.loadFavoriteIds()
-        .subscribe({
-          next: () => {
-            this.favoritesReady.set(true);
-            this.completePendingFavorite();
-          },
-          error: () => {
-            this.favoriteError.set(
-              'Could not load your favorite games.'
-          );
-        }
-      });
-      onCleanUp(() => subscription.unsubscribe());
-    });
-  }
 
   ngOnInit(): void {
     this.searchTyped.pipe(
@@ -147,39 +117,14 @@ export class Games implements OnInit {
 
     return result;
   });
-  // Guests are sent to login with a returnUrl that brings them back to this
-  // search, page and card (through the #game-<id> fragment)
+
   toggleFavorite(id: number): void {
     if (!this.isLoggedIn()) {
       this.openLoginPrompt(id);
       return;
     }
-    if (!this.favoritesReady()) return;
-    if (this.favoriteBusyIds().has(id)) return;
 
-    this.favoriteError.set('');
-    this.favoriteBusyIds.update(ids => new Set([...ids, id]));
-
-    const request = this.favoriteIds().has(id) ? this.favoriteService.removeFavorite(id)
-      : this.favoriteService.addFavorite(id);
-    request.pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: () => {
-        this.clearFavoriteBusy(id);
-      },
-      error: (err: HttpErrorResponse) => {
-        this.clearFavoriteBusy(id);
-
-        if (err.status === 409) {
-          this.favoriteError.set('You have reached Favorites limit.');
-        } else if (err.status === 401) {
-          this.favoriteError.set('Session expired or no logged in.');
-        } else {
-          this.favoriteError.set('Could not update favorites. Try again.');
-        }
-      }
-    });
+    this.favorites.toggle(id);
   }
 
   private openLoginPrompt(id: number): void {
@@ -192,30 +137,7 @@ export class Games implements OnInit {
     const game = this.loginPrompt();
     if (!game) return;
 
-    this.favoriteService.setPendingFavorite(game.id);
-    const returnUrl = this.router.serializeUrl(
-      this.router.createUrlTree(['/games'], {
-        queryParams: this.route.snapshot.queryParams,
-        fragment: `game-${game.id}`
-      })
-    );
-    void this.router.navigate(['/login'], { queryParams: { returnUrl } });
-  }
-
-  private completePendingFavorite(): void {
-    const id = this.favoriteService.takePendingFavorite();
-    if (id === null) return;
-    if (this.route.snapshot.fragment !== `game-${id}`) return;
-    if (this.favoriteIds().has(id)) return;
-    this.toggleFavorite(id);
-  }
-
-  private clearFavoriteBusy(id: number): void {
-    this.favoriteBusyIds.update(ids => {
-      const updated = new Set(ids);
-      updated.delete(id);
-      return updated;
-    });
+    this.favorites.goToLogin(game.id);
   }
 
   private searchParams(search: string) {
