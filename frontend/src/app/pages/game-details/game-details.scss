@@ -130,68 +130,6 @@
     line-height: 1.8;
   }
 
-  // Screenshot gallery
-  &__main-shot {
-    display: block;
-    width: 100%;
-    max-height: 560px;
-    aspect-ratio: 16 / 9;
-
-    object-fit: contain;
-
-    background: var(--color-background);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-  }
-
-  &__thumbs {
-    display: flex;
-    gap: 12px;
-
-    margin-top: 16px;
-    padding-bottom: 8px;
-
-    overflow-x: auto;
-    scrollbar-width: thin;
-
-    button {
-      flex: 0 0 140px;
-      padding: 3px;
-
-      border: 2px solid transparent;
-      border-radius: 10px;
-
-      background: transparent;
-      cursor: pointer;
-
-      transition:
-        border-color 0.2s ease,
-        transform 0.2s ease;
-
-      img {
-        display: block;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        object-fit: cover;
-        border-radius: 6px;
-      }
-
-      &:hover {
-        border-color: var(--color-primary);
-        transform: translateY(-2px);
-      }
-
-      &.active {
-        border-color: var(--color-primary);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--color-primary);
-        outline-offset: 3px;
-      }
-    }
-  }
-
 	&__related {
 	  margin-top: 48px;
 	  padding-top: 32px;
@@ -554,10 +492,6 @@
     &__content {
       padding: 24px;
     }
-
-    &__thumbs button {
-      flex-basis: 115px;
-    }
   }
 }
 
@@ -584,14 +518,6 @@
 
       h2 {
         font-size: 1.2rem;
-      }
-    }
-
-    &__thumbs {
-      gap: 8px;
-
-      button {
-        flex-basis: 100px;
       }
     }
 

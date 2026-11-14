@@ -14,9 +14,10 @@ import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
 import { GameDetailsRelated } from './game-details-related';
 import { GameDetailsFavorites } from './game-details-favorites';
 import { GameFacts } from './components/game-facts/game-facts';
+import { GameGallery } from './components/game-gallery/game-gallery';
 
 @Component({
-  imports: [RouterLink, DecimalPipe, PriceComparison, ScrollControls,GameFacts],
+  imports: [RouterLink, DecimalPipe, PriceComparison, ScrollControls,GameFacts, GameGallery],
   providers: [GameDetailsRelated, GameDetailsFavorites],
   selector: 'app-game-details',
   styleUrl: './game-details.scss',
@@ -46,7 +47,6 @@ export class GameDetails implements OnInit {
   game = signal<GameDetailsModel | null>(null);
   loading = signal(true);
   error = signal('');
-  selectedShot = signal<string | null>(null);
 
   ngOnInit(): void {
     const id$ = this.route.paramMap.pipe(
@@ -61,7 +61,6 @@ export class GameDetails implements OnInit {
       tap(() => {
         this.loading.set(true);
         this.error.set('');
-        this.selectedShot.set(null);
         this.game.set(null);
         this.related.reset();
         this.favorites.reset();

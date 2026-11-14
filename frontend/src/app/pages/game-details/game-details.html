@@ -70,22 +70,10 @@
 				</section>
 
 				@if (g.screenshots.length) {
-					<section>
-						<h2>Screenshots</h2>
-						<img class="game-details__main-shot" [src]="selectedShot() ?? g.screenshots[0]" [alt]="g.name + ' screenshot'" />
-						<div class="game-details__thumbs">
-							@for (shot of g.screenshots; track shot; let i = $index) {
-								<button type="button" 
-									[attr.aria-label]="'View screeenshot ' + (i + 1)" 
-									[attr.aria-pressed]="shot === (selectedShot() ?? g.screenshots[0])"
-									(click)="selectedShot.set(shot)"
-									[class.active]="shot === (selectedShot() ?? g.screenshots[0])"
-								>
-									<img [src]="shot" alt="" loading="lazy" />
-								</button>
-							}
-						</div>
-					</section>
+				<app-game-gallery
+					[screenshots]="g.screenshots"
+					[gameName]="g.name"
+				/>
 				}
 				<app-game-facts [game]="g" />
 
