@@ -3,18 +3,19 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { GameService } from '../../core/services/game-service';
 import { catchError, combineLatest, EMPTY, map, startWith, Subject, switchMap, tap } from 'rxjs';
 import { GamesNavigationService } from '../../core/services/games-navigation-service';
-import { GameDetailsModel, GameModel } from '../../core/models/game.model';
+import { GameDetailsModel } from '../../core/models/game.model';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
-import { PagedResult } from '../../core/models/paged-result.model';
 import { AuthService } from '../../core/services/auth-service';
 import { FavoriteService } from '../../core/services/favorite-service';
 import { PriceComparison } from '../../shared/price-comparison/price-comparison';
 import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
+import { GameDetailsRelated } from './game-details-related';
 
 @Component({
   imports: [RouterLink, DecimalPipe, PriceComparison, ScrollControls],
+  providers: [GameDetailsRelated],
   selector: 'app-game-details',
   styleUrl: './game-details.scss',
   templateUrl: './game-details.html',
@@ -26,13 +27,15 @@ export class GameDetails implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly retryRequest = new Subject<void>();
-  private readonly relatedPageRequests = new Subject<number>();
+  private readonly related = inject(GameDetailsRelated);
   private readonly auth = inject(AuthService);
   private readonly favoriteService = inject(FavoriteService);
 
   readonly gamesNavigation = inject(GamesNavigationService);
   private pressStartedOnBackdrop = false;
-  readonly relatedPageSize = 6;
+  readonly relatedGames = this.related.games;
+  readonly relatedLoading = this.related.loading;
+  readonly relatedError = this.related.error;
   readonly isLoggedIn = this.auth.isLoggedIn;
   readonly favoriteIds = this.favoriteService.favoriteIds;
 
@@ -40,9 +43,6 @@ export class GameDetails implements OnInit {
   loading = signal(true);
   error = signal('');
   selectedShot = signal<string | null>(null);
-  relatedGames = signal<PagedResult<GameModel> | null>(null);
-  relatedLoading = signal(false);
-  relatedError = signal('');
   favoritesReady = signal(false);
   favoriteBusyIds = signal<Set<number>>(new Set());
   favoriteError = signal('');
@@ -81,24 +81,29 @@ export class GameDetails implements OnInit {
     const id$ = this.route.paramMap.pipe(
       map(params => Number(params.get('id')))
     );
-    combineLatest([id$, this.retryRequest.pipe(startWith(undefined))]).pipe(
+
+    combineLatest([
+      id$,
+      this.retryRequest.pipe(startWith(undefined))
+    ]).pipe(
       map(([id]) => id),
       tap(() => {
         this.loading.set(true);
         this.error.set('');
         this.selectedShot.set(null);
         this.game.set(null);
-        this.relatedGames.set(null);
-        this.relatedLoading.set(false);
-        this.relatedError.set('');
+        this.related.reset();
       }),
-      switchMap(id => 
+      switchMap(id =>
         this.gameService.fetchGameDetails(id).pipe(
           catchError((err: HttpErrorResponse) => {
             this.loading.set(false);
             this.game.set(null);
-            this.error.set(err.status === 404 ? 'Game not found.'
-              : 'Unable to load this game. Please try again.');
+            this.error.set(
+              err.status === 404
+                ? 'Game not found.'
+                : 'Unable to load this game. Please try again.'
+            );
             return EMPTY;
           })
         )
@@ -106,53 +111,10 @@ export class GameDetails implements OnInit {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(game => {
       this.game.set(game);
-      this.relatedGames.set(game.relatedGames);
+      this.related.initialize(game);
       this.loading.set(false);
       this.completePendingFavorite();
     });
-
-    this.relatedPageRequests.pipe(
-      switchMap(page => {
-        const currentGame = this.game();
-
-        if (!currentGame) {
-          return EMPTY;
-        }
-
-        this.relatedLoading.set(true);
-        this.relatedError.set('');
-
-        return this.gameService.fetchGameDetails(
-          currentGame.id,
-          page,
-          this.relatedPageSize
-        ).pipe(
-          map(response => ({
-            gameId: currentGame.id,
-            related: response.relatedGames
-          })),
-
-          catchError(() => {
-            if (this.game()?.id === currentGame.id) {
-              this.relatedLoading.set(false);
-              this.relatedError.set(
-                'Could not load related games. Please try again.'
-              );
-            }
-
-            return EMPTY;
-          })
-        );
-      }),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe(({ gameId, related }) => {
-      if (this.game()?.id !== gameId) {
-        return;
-      }
-      this.relatedGames.set(related);
-      this.relatedLoading.set(false);
-    });
-
   }
   retry(): void {
     this.retryRequest.next();
@@ -182,22 +144,7 @@ export class GameDetails implements OnInit {
   }
 
   changeRelatedPage(page: number): void {
-    const related = this.relatedGames();
-
-    if (!this.game() || !related || this.relatedLoading()) {
-      return;
-    }
-
-    if (
-      !Number.isSafeInteger(page) ||
-      page < 1 ||
-      page > related.totalPages ||
-      page === related.page
-    ) {
-      return;
-    }
-
-    this.relatedPageRequests.next(page);
+    this.related.changePage(page);
   }
 
   toggleFavorite(id: number): void {

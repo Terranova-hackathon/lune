@@ -38,15 +38,15 @@ export const routes: Routes = [
 		path: 'games/:id',
 		component: GameDetails
 	},
-  {
-    path: 'account',
+	{
+	path: 'account',
 		component: UserAccount,
 		canActivate: [authGuard],
 	},
-  {
-    path: 'privacy',
-    component: Privacy
-  },
+	{
+		path: 'privacy',
+		component: Privacy
+	},
 	{
 		path: 'about',
 		component: About
