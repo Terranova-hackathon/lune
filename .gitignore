@@ -1,11 +1,8 @@
 node_modules
-.next
-out
 .env
 .env.local
 npm-debug.log*
 .DS_Store
-postgres_data
 
 bin/
 obj/

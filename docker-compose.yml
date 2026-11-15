@@ -1,7 +1,9 @@
 services:
     # SQL Server
     sqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
+        # Pinned: a newer SQL Server can upgrade the data files, and an older one can't open them again.
+        # Update on purpose: check the tag's version (16.0.4305.5 = 2022 CU27 GDR), never go lower.
+        image: mcr.microsoft.com/mssql/server:2022-CU27-ubuntu-22.04
         environment:
             - ACCEPT_EULA=Y
             - MSSQL_SA_PASSWORD=${SA_PASSWORD}
@@ -32,10 +34,10 @@ services:
         ports:
             - '3001:3001'
         environment:
-            - ASPNETCORE_ENVIRONMENT=Development
+            - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
             - ConnectionStrings__Default=Server=sqlserver,1433;Database=Lune;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True
             - Jwt__Secret=${JWT_SECRET}
-            - Rawg__ApiKey=${RAWG_API_KEY}
+            # - Rawg__ApiKey=${RAWG_API_KEY} # Degraded Service, remove for now
             - Igdb__ClientId=${IGDB_CLIENT_ID}
             - Igdb__ApiSecret=${IGDB_API_SECRET}
             - GgDeals__ApiKey=${GGDEALS_API_KEY}
@@ -75,7 +77,7 @@ services:
         ports:
             - '8080:8080'
         environment:
-            - API_URL=${API_URL:-http://localhost:3001}
+            - API_URL=${API_URL:-http://backend:3001}
         volumes:
             - ./frontend:/app
             - /app/node_modules
