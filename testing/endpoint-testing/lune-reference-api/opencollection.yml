@@ -3,6 +3,47 @@ opencollection: 1.0.0
 info:
   name: Lune Reference API
   version: "1"
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+docs:
+  content: |-
+    Backend for **LunaNova**, a game search site. Anyone can search and browse games;
+    signed-in users can also save games to their favorites.
+
+    Game data comes from [IGDB](https://www.igdb.com/). Prices come from Steam and
+    [GG.deals](https://gg.deals/), currently for the Italian region only.
+
+    ## Authentication
+
+    Sign-in uses a JWT in an **HttpOnly cookie** (`Lune_auth`), not an `Authorization` header.
+    `POST /api/auth/register` or `POST /api/auth/login` sets the cookie, and the browser sends it
+    automatically from then on. Sessions last 24 hours; `POST /api/auth/logout` ends one.
+    Endpoints marked "Requires sign-in" return `401` without a valid cookie.
+
+    Accounts need a password of at least 8 characters with an uppercase letter, a lowercase letter,
+    a digit and a symbol. Display names are optional, 2–20 characters, and unique.
+
+    ## Conventions
+
+    - **Game IDs** are IGDB IDs, shared by Games, Favorites and Prices.
+    - **Paging:** list endpoints take `page` (from 1) and `pageSize` (1–40) and return
+    `items`, `page`, `pageSize`, `totalCount` and `totalPages`.
+    - **Errors** use [Problem Details](https://www.rfc-editor.org/rfc/rfc9457). Invalid input
+    returns `400` with an `errors` object; most keys are field names, but password and
+    duplicate-email errors use ASP.NET Identity codes (e.g. `PasswordRequiresUpper`).
+    - **503** means an outside provider (IGDB, Steam or GG.deals) didn't respond. Retrying later
+    usually works.
+  type: text/markdown
 bundled: false
 extensions:
   bruno:

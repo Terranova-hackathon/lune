@@ -1,0 +1,33 @@
+info:
+  name: Logout
+  type: http
+  seq: 3
+  tags:
+    - Auth
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/logout"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+examples:
+  - name: 204 Response
+    description: No Content
+    request:
+      url: "{{baseUrl}}/api/auth/logout"
+      method: POST
+    response:
+      status: 204
+      statusText: No Content
+      body:
+        type: text
+        data: ""
+
+docs: Sign out by clearing the auth cookie. Always returns 204, even if no one is signed in.

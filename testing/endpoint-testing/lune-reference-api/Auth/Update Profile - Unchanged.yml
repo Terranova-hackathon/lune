@@ -1,0 +1,36 @@
+info:
+  name: Update Profile - Unchanged
+  type: http
+  seq: 24
+  tags:
+  - Auth
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/auth/profile'
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+  body:
+    type: json
+    data: |-
+      {
+        "displayName": "{{runNameNew}}"
+      }
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('re-saving your own name is allowed', () => {
+        expect(res.body.displayName).to.equal(bru.getVar('runNameNew'));
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

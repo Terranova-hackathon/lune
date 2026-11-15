@@ -1,7 +1,7 @@
 opencollection: 1.0.0
 
 info:
-  name: Lune  API Testing
+  name: Lune  Manual API Testing
 config:
   proxy:
     inherit: true
@@ -20,38 +20,49 @@ request:
     token: "{{token}}"
 
 docs:
-  content: |+
+  content: |-
     # Lune Game API Endpoints
 
-    Endpoints for backend service of Lune game search site
+    Endpoints for the backend service of the Lune game search site.
+
+    For full request and response details, run the backend and open the API reference at [`/docs`](http://localhost:3001/docs) (development only). The OpenAPI document is at `/openapi/v1.json`, and a copy is kept in [`openapi.json`](openapi.json).
+
+    ## Authentication
+
+    Sign-in uses a JWT stored in an HttpOnly cookie (`Lune_auth`), not an `Authorization` header. `register` and `login` set the cookie, and it is sent automatically on later requests. Sessions last 24 hours. Protected endpoints return `401 Unauthorized` without a valid cookie.
+
+    In Bruno, run **Register** or **Login** first so the cookie is stored for the protected requests.
 
     ## General Endpoints
 
-    Any site visitor should be able to make requests to the unprotected game search and game data endpoints as well as create an account to access protected endpoints.
+    Any site visitor can use the game search, game data and price endpoints, and can create an account to access the protected endpoints.
 
     | Type | Route | Description |
     |---|---|---|
-    | POST | /api/auth/login | Login to Account |
-    | POST | /api/auth/register | Create a new Account |
-    | GET | /api/games/ | retrieve game list w/wo query parameters |
-    | GET | /api/games/{id:int} | retrieve individual game data |
-    | GET | /api/games/companies | retrieve company list with query params |
-    | GET | /api/games/filters | retrieve search filter options |
-    | GET | /health | app build state check |
+    | POST | /api/auth/register | Create a new account and sign in |
+    | POST | /api/auth/login | Sign in to an account |
+    | POST | /api/auth/logout | Sign out by clearing the auth cookie (always succeeds, even when not signed in) |
+    | GET | /api/games/ | Retrieve a paged game list, with or without search and filter query parameters |
+    | GET | /api/games/{id:int} | Retrieve full data for one game, including related games |
+    | GET | /api/games/featured | Retrieve 10 random games from the most-rated, for the home page |
+    | GET | /api/games/filters | Retrieve the genre, platform and sort options the search accepts |
+    | GET | /api/games/companies | Search developers or publishers by name (`kind` and `search` query parameters required) |
+    | GET | /api/prices/{id:int} | Retrieve Steam and GG.deals prices for one game (Italian region) |
+    | GET | /health | Liveness check: returns `ok` when the API process is running |
 
     ## Protected Endpoints
 
-    Certain functionality is reserved for registered users. This includes saving favorited games to a user list and access to the user profile page.
+    Some functionality is reserved for registered users: saving games to a favorites list and managing the user's account.
 
     | Type | Route | Description |
     |---|---|---|
-    | POST | /api/auth/logout | logout signed in user (not protected, but JWT required to logout user) |
-    | GET | /api/auth/me | return user profile data |
-    | GET | /api/favorites/ | returns structured summaries games in user's favorites list |
-    | DELETE | /api/favorites/{id:int} | remove game from favorite list by id  |
-    | PUT | /api/favorites/{id:int} | add game to user favorite list by id |
-    | GET | /api/favorites/ids | retrieves all user's favorites ids |
-
+    | GET | /api/auth/me | Return the signed-in user's data |
+    | PUT | /api/auth/profile | Change the signed-in user's display name |
+    | DELETE | /api/auth/delete-account | Permanently delete the signed-in user's account and all their data |
+    | GET | /api/favorites/ | Return a paged list of game summaries in the user's favorites, newest first |
+    | GET | /api/favorites/ids | Return the IDs of all the user's favorites |
+    | PUT | /api/favorites/{id:int} | Add a game to the user's favorites by ID |
+    | DELETE | /api/favorites/{id:int} | Remove a game from the user's favorites by ID |
   type: text/markdown
 bundled: false
 extensions:

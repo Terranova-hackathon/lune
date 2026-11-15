@@ -1,0 +1,30 @@
+info:
+  name: List Favorite IDs - After Remove
+  type: http
+  seq: 18
+  tags:
+  - Favorites
+http:
+  method: GET
+  url: '{{baseUrl}}/api/favorites/ids'
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('only the first game is left', () => {
+        expect(res.body).to.deep.equal([Number(bru.getEnvVar('gameId'))]);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

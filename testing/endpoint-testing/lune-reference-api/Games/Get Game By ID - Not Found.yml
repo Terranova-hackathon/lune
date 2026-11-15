@@ -1,0 +1,27 @@
+info:
+  name: Get Game By ID - Not Found
+  type: http
+  seq: 18
+  tags:
+  - Games
+http:
+  method: GET
+  url: '{{baseUrl}}/api/games/:id'
+  params:
+  - name: id
+    value: '{{unknownGameId}}'
+    type: path
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 404', () => {
+        expect(res.status).to.equal(404);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

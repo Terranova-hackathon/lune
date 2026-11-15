@@ -1,0 +1,31 @@
+info:
+  name: Get Price Comparison - Not On Steam
+  type: http
+  seq: 2
+  tags:
+  - Prices
+http:
+  method: GET
+  url: '{{baseUrl}}/api/prices/:Id'
+  params:
+  - name: Id
+    value: '{{nonSteamGameId}}'
+    type: path
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 404', () => {
+        expect(res.status).to.equal(404);
+      });
+
+      test('explains that there is no price data', () => {
+        expect(res.body.title).to.equal('No price data found.');
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

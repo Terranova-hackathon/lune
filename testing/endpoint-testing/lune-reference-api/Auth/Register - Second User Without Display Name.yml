@@ -1,0 +1,47 @@
+info:
+  name: Register - Second User Without Display Name
+  type: http
+  seq: 15
+  tags:
+  - Auth
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/register'
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{runEmail3}}",
+        "displayName": null,
+        "password": "{{password}}",
+        "acceptedPrivacyPolicy": true
+      }
+  auth: inherit
+runtime:
+  scripts:
+  - type: after-response
+    code: |-
+      // Keep the auth cookie so later requests can send it explicitly.
+      const raw = res.headers['set-cookie'];
+      const cookies = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      const auth = cookies.find(c => c.startsWith('Lune_auth='));
+      if (auth) bru.setVar('token', auth.split(';')[0].substring('Lune_auth='.length));
+  - type: tests
+    code: |-
+      test('returns 201', () => {
+        expect(res.status).to.equal(201);
+      });
+
+      test('displayName is null', () => {
+        expect(res.body.displayName).to.equal(null);
+      });
+
+      test('several users can have no display name', () => {
+        expect(res.body.email).to.equal(bru.getVar('runEmail3'));
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

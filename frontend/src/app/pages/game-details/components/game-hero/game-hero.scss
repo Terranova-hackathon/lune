@@ -1,0 +1,78 @@
+:host {
+  display: block;
+  cursor: auto;
+}
+
+.game-details {
+	&__hero {
+		position: relative;
+		display: flex;
+		align-items: flex-end;
+
+		min-height: 370px;
+		padding: 32px;
+
+		background-color: var(--color-surface-alt);
+		background-size: cover;
+		background-position: center;
+
+		border: 1px solid var(--color-border);
+		border-radius: 16px 16px 0 0;
+		overflow: hidden;
+
+		&::before {
+			content: '';
+			position: absolute;
+			inset: 0;
+			background: linear-gradient(
+			180deg,
+			rgba(8, 11, 23, 0.15) 0%,
+			rgba(8, 11, 23, 0.75) 100%
+			);
+			pointer-events: none;
+		}
+	}
+
+	&__cover {
+		position: relative;
+		z-index: 1;
+
+		width: 180px;
+		height: 255px;
+		object-fit: cover;
+
+		border-radius: 10px;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		background: var(--color-surface);
+
+		box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+	}
+}
+
+@media (max-width: 768px) {
+  .game-details {
+    &__hero {
+      min-height: 280px;
+      padding: 20px;
+    }
+
+    &__cover {
+      width: 130px;
+      height: 185px;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .game-details {
+    &__hero {
+      min-height: 230px;
+      padding: 16px;
+    }
+
+    &__cover {
+      width: 100px;
+      height: 145px;
+    }
+  }
+}

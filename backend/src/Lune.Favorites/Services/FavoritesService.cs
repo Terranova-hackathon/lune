@@ -16,7 +16,6 @@ public enum AddFavoriteResult
 
 internal sealed class FavoritesService(FavoritesDbContext db, IGameCatalog catalog)
 {
-    public const int MaxFavorites = 1000;
     public async Task<PagedResult<GameSummary>> ListAsync(
         string userId, int page, int pageSize, CancellationToken cancellationToken = default)
     {

@@ -1,0 +1,329 @@
+info:
+  name: Search Games
+  type: http
+  seq: 1
+  tags:
+  - Games
+http:
+  method: GET
+  url: '{{baseUrl}}/api/games'
+  params:
+  - name: search
+    value: ''
+    type: query
+    description: Text to match anywhere in the game name. Leave empty to browse the most-rated games.
+    disabled: true
+  - name: page
+    value: '1'
+    type: query
+    description: Page number, starting at 1.
+  - name: pageSize
+    value: '20'
+    type: query
+    description: Results per page, 1–40. Default 20.
+  - name: genres
+    value: ''
+    type: query
+    description: Comma-separated genre slugs, up to 10. Get valid values from `GET /api/games/filters`.
+    disabled: true
+  - name: platforms
+    value: ''
+    type: query
+    description: 'Comma-separated platform IDs, up to 10. Example: `6,167` (PC, PlayStation 5). Get valid values from `GET /api/games/filters`.'
+    disabled: true
+  - name: developers
+    value: ''
+    type: query
+    description: Comma-separated developer slugs, up to 10. Get slugs from `GET /api/games/companies?kind=developer`.
+    disabled: true
+  - name: publishers
+    value: ''
+    type: query
+    description: Comma-separated publisher slugs, up to 10. Get slugs from `GET /api/games/companies?kind=publisher`.
+    disabled: true
+  - name: ordering
+    value: ''
+    type: query
+    description: 'Sort order: `-rating`, `-metacritic`, `-released`, `released`, `-added` (most rated) or `name`. A leading `-` means descending. Default: most rated when browsing, name A–Z when searching.'
+    disabled: true
+  - name: metacriticMin
+    value: ''
+    type: query
+    description: Minimum critic score, 0–100. Game Database has no Metacritic score, so this uses Game Database's critic rating.
+    disabled: true
+  - name: metacriticMax
+    value: ''
+    type: query
+    description: Maximum critic score, 0–100. Must not be lower than `metacriticMin`.
+    disabled: true
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('returns a paged result', () => {
+        const b = res.body;
+        expect(b).to.have.property('items').that.is.an('array');
+        ['page', 'pageSize', 'totalCount', 'totalPages'].forEach(k => expect(b[k], k).to.be.a('number'));
+        expect(b.items.length).to.be.at.most(b.pageSize);
+        expect(b.totalPages).to.equal(b.pageSize > 0 ? Math.ceil(b.totalCount / b.pageSize) : 0);
+      });
+
+      test('items have the game summary shape', () => {
+        res.body.items.forEach(g => {
+          expect(g.id).to.be.a('number');
+          expect(g.name).to.be.a('string');
+          expect(g.genres).to.be.an('array');
+          expect(g.platforms).to.be.an('array');
+        });
+      });
+
+      test('browsing returns games', () => {
+        expect(res.body.totalCount).to.be.above(0);
+        expect(res.body.page).to.equal(1);
+        expect(res.body.pageSize).to.equal(20);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 200 Response
+  description: OK
+  request:
+    url: '{{baseUrl}}/api/games'
+    method: GET
+    params:
+    - name: search
+      value: ''
+      type: query
+      description: Text to match anywhere in the game name. Leave empty to browse the most-rated games.
+      disabled: true
+    - name: page
+      value: '1'
+      type: query
+      description: Page number, starting at 1.
+    - name: pageSize
+      value: '20'
+      type: query
+      description: Results per page, 1–40. Default 20.
+    - name: genres
+      value: ''
+      type: query
+      description: Comma-separated genre slugs, up to 10. Get valid values from `GET /api/games/filters`.
+      disabled: true
+    - name: platforms
+      value: ''
+      type: query
+      description: 'Comma-separated platform IDs, up to 10. Example: `6,167` (PC, PlayStation 5). Get valid values from `GET /api/games/filters`.'
+      disabled: true
+    - name: developers
+      value: ''
+      type: query
+      description: Comma-separated developer slugs, up to 10. Get slugs from `GET /api/games/companies?kind=developer`.
+      disabled: true
+    - name: publishers
+      value: ''
+      type: query
+      description: Comma-separated publisher slugs, up to 10. Get slugs from `GET /api/games/companies?kind=publisher`.
+      disabled: true
+    - name: ordering
+      value: ''
+      type: query
+      description: 'Sort order: `-rating`, `-metacritic`, `-released`, `released`, `-added` (most rated) or `name`. A leading `-` means descending. Default: most rated when browsing, name A–Z when searching.'
+      disabled: true
+    - name: metacriticMin
+      value: ''
+      type: query
+      description: Minimum critic score, 0–100. Game Database has no Metacritic score, so this uses Game Database's critic rating.
+      disabled: true
+    - name: metacriticMax
+      value: ''
+      type: query
+      description: Maximum critic score, 0–100. Must not be lower than `metacriticMin`.
+      disabled: true
+  response:
+    status: 200
+    statusText: OK
+    headers:
+    - name: Content-Type
+      value: application/json
+    body:
+      type: json
+      data: |-
+        {
+          "items": [
+            {
+              "id": "",
+              "name": "",
+              "released": "",
+              "backgroundImage": "",
+              "rating": "",
+              "metacritic": "",
+              "genres": [
+                {
+                  "value": "",
+                  "name": ""
+                }
+              ],
+              "platforms": [
+                {
+                  "value": "",
+                  "name": ""
+                }
+              ]
+            }
+          ],
+          "page": "",
+          "pageSize": "",
+          "totalCount": "",
+          "totalPages": ""
+        }
+- name: 400 Response
+  description: Bad Request
+  request:
+    url: '{{baseUrl}}/api/games'
+    method: GET
+    params:
+    - name: search
+      value: ''
+      type: query
+      description: Text to match anywhere in the game name. Leave empty to browse the most-rated games.
+      disabled: true
+    - name: page
+      value: '1'
+      type: query
+      description: Page number, starting at 1.
+    - name: pageSize
+      value: '20'
+      type: query
+      description: Results per page, 1–40. Default 20.
+    - name: genres
+      value: ''
+      type: query
+      description: Comma-separated genre slugs, up to 10. Get valid values from `GET /api/games/filters`.
+      disabled: true
+    - name: platforms
+      value: ''
+      type: query
+      description: 'Comma-separated platform IDs, up to 10. Example: `6,167` (PC, PlayStation 5). Get valid values from `GET /api/games/filters`.'
+      disabled: true
+    - name: developers
+      value: ''
+      type: query
+      description: Comma-separated developer slugs, up to 10. Get slugs from `GET /api/games/companies?kind=developer`.
+      disabled: true
+    - name: publishers
+      value: ''
+      type: query
+      description: Comma-separated publisher slugs, up to 10. Get slugs from `GET /api/games/companies?kind=publisher`.
+      disabled: true
+    - name: ordering
+      value: ''
+      type: query
+      description: 'Sort order: `-rating`, `-metacritic`, `-released`, `released`, `-added` (most rated) or `name`. A leading `-` means descending. Default: most rated when browsing, name A–Z when searching.'
+      disabled: true
+    - name: metacriticMin
+      value: ''
+      type: query
+      description: Minimum critic score, 0–100. Game Database has no Metacritic score, so this uses Game Database's critic rating.
+      disabled: true
+    - name: metacriticMax
+      value: ''
+      type: query
+      description: Maximum critic score, 0–100. Must not be lower than `metacriticMin`.
+      disabled: true
+  response:
+    status: 400
+    statusText: Bad Request
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": "",
+          "errors": {}
+        }
+- name: 503 Response
+  description: Service Unavailable
+  request:
+    url: '{{baseUrl}}/api/games'
+    method: GET
+    params:
+    - name: search
+      value: ''
+      type: query
+      description: Text to match anywhere in the game name. Leave empty to browse the most-rated games.
+      disabled: true
+    - name: page
+      value: '1'
+      type: query
+      description: Page number, starting at 1.
+    - name: pageSize
+      value: '20'
+      type: query
+      description: Results per page, 1–40. Default 20.
+    - name: genres
+      value: ''
+      type: query
+      description: Comma-separated genre slugs, up to 10. Get valid values from `GET /api/games/filters`.
+      disabled: true
+    - name: platforms
+      value: ''
+      type: query
+      description: 'Comma-separated platform IDs, up to 10. Example: `6,167` (PC, PlayStation 5). Get valid values from `GET /api/games/filters`.'
+      disabled: true
+    - name: developers
+      value: ''
+      type: query
+      description: Comma-separated developer slugs, up to 10. Get slugs from `GET /api/games/companies?kind=developer`.
+      disabled: true
+    - name: publishers
+      value: ''
+      type: query
+      description: Comma-separated publisher slugs, up to 10. Get slugs from `GET /api/games/companies?kind=publisher`.
+      disabled: true
+    - name: ordering
+      value: ''
+      type: query
+      description: 'Sort order: `-rating`, `-metacritic`, `-released`, `released`, `-added` (most rated) or `name`. A leading `-` means descending. Default: most rated when browsing, name A–Z when searching.'
+      disabled: true
+    - name: metacriticMin
+      value: ''
+      type: query
+      description: Minimum critic score, 0–100. Game Database has no Metacritic score, so this uses Game Database's critic rating.
+      disabled: true
+    - name: metacriticMax
+      value: ''
+      type: query
+      description: Maximum critic score, 0–100. Must not be lower than `metacriticMin`.
+      disabled: true
+  response:
+    status: 503
+    statusText: Service Unavailable
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": ""
+        }
+docs: Search the game catalog by name, filters, or both. With no search term, the most-rated games are listed first; with a search term, results are sorted by name. `ordering` overrides either default. Within one filter, values are OR-ed (any listed genre matches); different filters are AND-ed. Games without a release date or rating are never included.
