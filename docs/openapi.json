@@ -273,7 +273,7 @@
           "Games"
         ],
         "summary": "Get Filter Options",
-        "description": "Everything the search filters accept, for building the filter UI. Each option has a `value` to send and a `name` to display. `genres` lists all Game Database genres(value = slug, for the `genres` parameter).`platforms` lists the platforms Lune supports (value = platform ID, for the `platforms` parameter). `orderings` lists the sort orders for the `ordering` parameter. Cached on the server for 12 hours.",
+        "description": "Everything the search filters accept, for building the filter UI. Each option has a `value` to send and a `name` to display. `genres` lists all Game Database genres(value = slug, for the `genres` parameter).`platforms` lists the platforms Lune supports (value = platform ID, for the `platforms` parameter). `orderings` lists the sort orders for the `ordering` parameter. Cached on the server for 10 minutes.",
         "operationId": "Get Filter Options",
         "responses": {
           "200": {

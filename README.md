@@ -100,10 +100,12 @@ A suggested 10-minute tour, with the app running:
 
 - Browse and try every endpoint in the **Scalar** reference at [localhost:3001/docs](http://localhost:3001/docs).
 - Run the full **Bruno** test suite with one command. It needs Node.js and the Bruno CLI; setup is in [testing/README.md](./testing/README.md).
+
 ``` bash
 cd testing/endpoint-testing/lune-reference-api && node run-tests.mjs
 ```
-  It writes an HTML report to `reports/`.
+
+It writes an HTML report to `reports/`.
 
 ---
 
@@ -134,6 +136,7 @@ Why these choices were made, and how the pieces fit together: [docs/ARCHITECTURE
 | [docs/FUTURE.md](./docs/FUTURE.md)                       | Planned features and known limitations                                              |
 | [testing/README.md](./testing/README.md)                 | Exploring the API with Scalar, the Bruno test suite, frontend unit tests            |
 | [CONTRIBUTING.md](./CONTRIBUTING.md)                     | Developer guide: the Docker setup, everyday commands, editor setup, troubleshooting |
+| [backend/README.md](./backend/README.md)                 | Backend modules, configuration, migrations and conventions                          |
 | [frontend/README.md](./frontend/README.md)               | Frontend structure and scripts                                                      |
 | `docs/openapi.json`                                      | The generated OpenAPI description of the API                                        |
 | `docs/en.game_explorer.pdf`, `docs/it.game_explorer.pdf` | The original challenge brief (English, Italian)                                     |

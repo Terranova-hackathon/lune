@@ -3,6 +3,7 @@
 The Angular 22 app for LunaNova (internal name: Lune), built with TypeScript, Bootstrap and RxJS. It talks to the backend through relative `/api/...` URLs.
 
 How the app is organized (pages, shared components, services, guards) is described in [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md#frontend-architecture).
+The API it calls is described in [backend/README.md](../backend/README.md).
 
 ## Running it
 

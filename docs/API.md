@@ -30,9 +30,11 @@ The database behind it is described in [DATABASE.md](./DATABASE.md), the module 
 - **Dates:** `released` is a `YYYY-MM-DD` string, or `null` if unknown.
 - **Ratings:** `rating` is IGDB's user rating, scaled to 0–5. `metacritic` is IGDB's aggregated critic rating (0–100); IGDB has no Metacritic data, so this stands in for it.
 - **Paging:** list endpoints take `page` (from 1; lower values become 1) and `pageSize` (clamped to 1–40) and return:
+
 ``` json
 { "items": [], "page": 1, "pageSize": 20, "totalCount": 0, "totalPages": 0 }
 ```
+
 - **Filter options** (genres, platforms, companies) are `{ "value": "...", "name": "..." }` objects: `value` is what you send back to the API, `name` is for display.
 
 ### Authentication
@@ -149,7 +151,7 @@ Responses: **200** `GameDetails`, **404** (empty body) for an unknown ID, **503*
 
 ### `GET /api/games/filters`
 
-Everything the search filters accept: `genres` (all IGDB genres; `value` is the slug), `platforms` (the platforms Lune supports; `value` is the numeric ID as a string) and `orderings` (the six sort orders). Cached on the server for 12 hours.
+Everything the search filters accept: `genres` (all IGDB genres; `value` is the slug), `platforms` (the platforms Lune supports; `value` is the numeric ID as a string) and `orderings` (the six sort orders). Cached on the server for 10 minutes.
 
 Responses: **200**, **503**.
 

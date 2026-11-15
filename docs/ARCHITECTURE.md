@@ -147,7 +147,7 @@ graph LR
 #### GamesModule
 
 - **Data Source**: IGDB (Internet Game Database) via Twitch OAuth token
-- **Caching**: In-memory cache for filter options (12 hours) and featured-game candidates (10 minutes)
+- **Caching**: In-memory cache for search results (5 minutes), game details, filter options and featured-game candidates (10 minutes each); configurable through the `Igdb` options
 - **Exports**: `IGameCatalog` interface for other modules to look up game metadata, external store IDs (Steam, GOG, Epic, etc.)
 
 #### FavoritesModule

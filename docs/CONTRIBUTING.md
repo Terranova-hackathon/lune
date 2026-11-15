@@ -109,12 +109,14 @@ Running the app only needs Docker, but your editor needs the SDKs and packages l
 Useful for debugging the backend in your IDE. Keep SQL Server in Docker and run the rest on your machine. This needs the [editor support](#editor-support) installs.
 
 1. **Stop the containerized backend and frontend**, so their ports are free, and keep only the database:
+
 ``` bash
 docker compose stop backend frontend
 docker compose up -d sqlserver
 ```
 
-2. **Run the backend** with the settings it would get from Compose, pointing at `localhost` instead of the `sqlserver` container:
+1. **Run the backend** with the settings it would get from Compose, pointing at `localhost` instead of the `sqlserver` container:
+
 ``` bash
 cd backend/src/Lune.Api
 export ConnectionStrings__Default="Server=localhost,1433;Database=Lune;User Id=sa;Password=<SA_PASSWORD>;TrustServerCertificate=True"
@@ -124,14 +126,17 @@ export Igdb__ApiSecret="<IGDB_API_SECRET>"
 export GgDeals__ApiKey="<GGDEALS_API_KEY>"
 dotnet watch run
 ```
-   Use the values from your `.env`. Outside Docker the backend uses `Properties/launchSettings.json`: Development, on [http://localhost:3001](http://localhost:3001). In an IDE, set the same variables in its run configuration.
 
-3. **Run the frontend:**
+Use the values from your `.env`. Outside Docker the backend uses `Properties/launchSettings.json`: Development, on [http://localhost:3001](http://localhost:3001). In an IDE, set the same variables in its run configuration.
+
+1. **Run the frontend:**
+
 ``` bash
 cd frontend
 npm start
 ```
-   It serves on [http://localhost:4200](http://localhost:4200) and proxies `/api` to `http://localhost:3001` (see `frontend/proxy.conf.js`).
+
+It serves on [http://localhost:4200](http://localhost:4200) and proxies `/api` to `http://localhost:3001` (see `frontend/proxy.conf.js`).
 
 ---
 
@@ -150,7 +155,7 @@ npm start
 | `testing/`                   | Bruno API test suite and its tools. See [testing/README.md](./testing/README.md).                                                                                                                                |
 | `mock-api/`                  | An early in-memory mock of the API. **Not maintained and not part of the build:** it predates IGDB, prices and the profile changes. Kept for possible future use; it needs updating before it can be used again. |
 
-How the modules fit together: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+Backend configuration, migrations and how to add a module: [backend/README.md](./backend/README.md). How the modules fit together: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ---
 
@@ -161,10 +166,10 @@ How the modules fit together: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 - **npm dependencies come from the lockfile.** The frontend image installs with `npm ci`. Add or upgrade packages with `npm install <package>` (or `npm update`) and commit the updated `package-lock.json` together with `package.json`.
 - **Environment variables:** every variable the app reads is listed and explained in `.env.example`. Add new ones there, and never commit `.env`.
 - **When the API changes:**
-  - Update the endpoint metadata (summary, description, responses) so the Scalar reference stays accurate.
-  - Regenerate `docs/openapi.json`: `curl -s http://localhost:3001/openapi/v1.json -o docs/openapi.json`.
-  - Update [docs/API.md](./docs/API.md) if the overview changes.
-  - Add tests to the Bruno suite: see [Maintaining the tests](./testing/README.md#5-maintaining-the-tests).
+- Update the endpoint metadata (summary, description, responses) so the Scalar reference stays accurate.
+- Regenerate `docs/openapi.json`: `curl -s http://localhost:3001/openapi/v1.json -o docs/openapi.json`.
+- Update [docs/API.md](./docs/API.md) if the overview changes.
+- Add tests to the Bruno suite: see [Maintaining the tests](./testing/README.md#5-maintaining-the-tests).
 - **Database changes** are EF Core migrations in the module that owns the schema (`Lune.Auth/Data/Migrations`, `Lune.Favorites/Data/Migrations`). They run automatically at startup. Update [docs/DATABASE.md](./docs/DATABASE.md) with the change.
 
 <!-- Team workflow: branch naming, pull requests and reviews, commit message style. Add here once agreed. -->

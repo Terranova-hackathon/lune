@@ -156,7 +156,7 @@ The parts that aren't visible in the UI, but that we'd most like evaluators to s
 - **Modules talk through interfaces, not references.** Prices and Favorites look up games through `IGameCatalog`, never by calling the Games module directly. Account deletion asks every module that holds user data to clean up through `IUserDataCleaner`, so Auth doesn't need to know which modules exist.
 - **Pluggable price sources.** Each store implements `IPlatformPriceService`. Adding a store means adding one class and registering it; the endpoint picks it up automatically. If one store fails, the others are still returned.
 - **Favorites keep a copy of the game.** Saving a favorite stores the game's summary next to its ID, so the favorites page is a single database query and keeps working when IGDB is unavailable.
-- **Caching where it pays off:** filter options (12 hours), featured games (10 minutes), Steam app ID lookups (24 hours) and prices (6 hours), in memory.
+- **Caching where it pays off:** search results (5 minutes), game details, filter options and featured games (10 minutes each), Steam app ID lookups (24 hours) and prices (6 hours), all in memory. The IGDB and price cache durations are configurable.
 - **Input validation and consistent errors.** All query parameters and request bodies are validated (slug formats, value limits, score ranges, password rules), and every error uses the standard Problem Details format.
 - **Secure session handling.** The JWT lives in an HttpOnly, SameSite=Lax cookie that JavaScript can't read. The user ID always comes from the token, never from the request.
 - **Health checks.** `/health` (process up) and `/health/ready` (database reachable). Docker starts the frontend only once the backend is ready.
