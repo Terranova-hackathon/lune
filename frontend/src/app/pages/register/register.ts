@@ -1,9 +1,16 @@
 import { afterNextRender, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth-service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { safeReturnUrl } from '../../core/utils/return-url';
+
+/** Form-level check: both password fields filled in and different. */
+function passwordsMatch(group: AbstractControl): ValidationErrors | null {
+  const password = group.get('password')?.value;
+  const confirm = group.get('confirmPassword')?.value;
+  return password && confirm && password !== confirm ? { passwordMismatch: true } : null;
+}
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -26,7 +33,8 @@ export class Register {
 	}
 
   readonly form = this.buildform.nonNullable.group({
-    displayName: [''],
+    // Optional; minLength/maxLength only apply when a name is entered. Matches the backend's 2-20 rule.
+    displayName: ['', [Validators.minLength(2), Validators.maxLength(20)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [
       Validators.required, Validators.minLength(8),
@@ -34,21 +42,34 @@ export class Register {
     ]],
     confirmPassword: ['', Validators.required],
     acceptedPrivacyPolicy: [false, Validators.requiredTrue]
-  });
+  }, { validators: passwordsMatch });
+
+  /** True when the field should show its error state. */
+  showError(name: keyof typeof this.form.controls): boolean {
+    const control = this.form.controls[name];
+    return control.touched && control.invalid;
+  }
+
+  /** The confirm field is also invalid when the two passwords differ. */
+  showConfirmError(): boolean {
+    const confirm = this.form.controls.confirmPassword;
+    return confirm.touched && (confirm.invalid || this.form.hasError('passwordMismatch'));
+  }
 
   onSubmit(): void {
-    if (this.form.invalid || this.loading()) {
+    if (this.loading()) {
+      return;
+    }
+    this.error.set(null);
+
+    if (this.form.invalid) {
+      // Shows every field's message, including the password mismatch.
       this.form.markAllAsTouched();
       return;
     }
-    const values = this.form.getRawValue();
 
-    if (values.password !== values.confirmPassword) {
-      this.error.set('Passwords do not match.');
-      return;
-    }
+    const values = this.form.getRawValue();
     this.loading.set(true);
-    this.error.set(null);
     this.auth.register({
       email: values.email,
       password: values.password,
@@ -64,14 +85,24 @@ export class Register {
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
-        if (err.status === 0) {
-          this.error.set('Cannot connect to the server.');
-        } else if (err.status === 400) {
-          this.error.set('Check your credentials. Email may be already registered');
-        } else {
-          this.error.set('Registration failed, Please try again.');
-        }
+        this.error.set(this.messageFor(err));
       }
     });
+  }
+
+  /** Turns the server's response into a message, using its own wording where there is one. */
+  private messageFor(err: HttpErrorResponse): string {
+    if (err.status === 0) {
+      return 'Cannot connect to the server.';
+    }
+    // Validation problems list their messages per field, e.g. { "DisplayName": ["This display name is already in use."] }.
+    const errors = err.error?.errors as Record<string, string[]> | undefined;
+    if (err.status === 400 && errors) {
+      const messages = [...new Set(Object.values(errors).flat())];
+      if (messages.length) {
+        return messages.join(' ');
+      }
+    }
+    return err.error?.detail ?? err.error?.title ?? 'Registration failed. Please try again.';
   }
 }

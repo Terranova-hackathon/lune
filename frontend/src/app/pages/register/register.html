@@ -1,9 +1,10 @@
+
 <main class="auth-page">
 	<section class="auth-card">
 		<h1>Create an account</h1>
 		<p>Join LunaNova and start your Collection.</p>
 
-		<form [formGroup]="form" (ngSubmit)="onSubmit()">
+		<form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 			<div class="mb-3">
 				<label class="form-label" for="register-name">
 					Display name (optional)
@@ -16,7 +17,16 @@
 					class="form-control"
 					formControlName="displayName"
 					autocomplete="nickname"
+					[class.is-invalid]="showError('displayName')"
+					[attr.aria-invalid]="showError('displayName')"
+					aria-describedby="name-help"
 				/>
+
+				@if (showError('displayName')) {
+					<div class="invalid-feedback">
+						Display name must be between 2 and 20 characters.
+					</div>
+				}
 			</div>
 
 			<div class="mb-3">
@@ -31,11 +41,11 @@
 					class="form-control"
 					formControlName="email"
 					autocomplete="email"
-					[class.is-invalid]="form.controls.email.touched && form.controls.email.invalid"
-					aria-describedby="password-help"
+					[class.is-invalid]="showError('email')"
+					[attr.aria-invalid]="showError('email')"
 				/>
 
-				@if (form.controls.email.touched && form.controls.email.invalid) {
+				@if (showError('email')) {
 					<div class="invalid-feedback">
 						Enter a valid email address.
 					</div>
@@ -53,11 +63,23 @@
 					class="form-control"
 					formControlName="password"
 					autocomplete="new-password"
-					[class.is-invalid]="form.controls.password.touched && form.controls.password.invalid"
+					[class.is-invalid]="showError('password')"
+					[attr.aria-invalid]="showError('password')"
+					aria-describedby="password-help"
 				/>
 				<div id="password-help" class="form-text">
 					Minimum 8 characters, including uppercase, lowercase, a digit and a special character.
 				</div>
+
+				@if (showError('password')) {
+					<div class="invalid-feedback">
+						@if (form.controls.password.hasError('required')) {
+							Enter a password.
+						} @else {
+							The password doesn't meet the rules above.
+						}
+					</div>
+				}
 			</div>
 
 			<div class="mb-3">
@@ -71,7 +93,19 @@
 					class="form-control"
 					formControlName="confirmPassword"
 					autocomplete="new-password"
+					[class.is-invalid]="showConfirmError()"
+					[attr.aria-invalid]="showConfirmError()"
 				/>
+
+				@if (showConfirmError()) {
+					<div class="invalid-feedback">
+						@if (form.controls.confirmPassword.hasError('required')) {
+							Repeat your password.
+						} @else {
+							Passwords do not match.
+						}
+					</div>
+				}
 			</div>
 
 			<div class="form-check mb-3">
@@ -80,15 +114,14 @@
 					type="checkbox"
 					class="form-check-input"
 					formControlName="acceptedPrivacyPolicy"
-					required
-					[class.is-invalid]="form.controls.acceptedPrivacyPolicy.touched && form.controls.acceptedPrivacyPolicy.invalid"
-					[attr.aria-invalid]="form.controls.acceptedPrivacyPolicy.touched && form.controls.acceptedPrivacyPolicy.invalid"
-					[attr.aria-describedby]="form.controls.acceptedPrivacyPolicy.touched && form.controls.acceptedPrivacyPolicy.invalid ? 'privacy-consent-error' : null"
+					[class.is-invalid]="showError('acceptedPrivacyPolicy')"
+					[attr.aria-invalid]="showError('acceptedPrivacyPolicy')"
+					[attr.aria-describedby]="showError('acceptedPrivacyPolicy') ? 'privacy-consent-error' : null"
 				/>
 				<label class="form-check-label" for="privacy-consent">
 					I have read the <a [routerLink]="['/privacy']" target="_blank">privacy policy</a>.
 				</label>
-				@if (form.controls.acceptedPrivacyPolicy.touched && form.controls.acceptedPrivacyPolicy.invalid) {
+				@if (showError('acceptedPrivacyPolicy')) {
 					<div id="privacy-consent-error" class="invalid-feedback">
 						You must agree to the privacy policy.
 					</div>

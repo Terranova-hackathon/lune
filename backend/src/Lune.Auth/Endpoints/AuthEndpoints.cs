@@ -123,9 +123,17 @@ public static class AuthEndpoints
         /// </summary>
         if (!res.Succeeded)
         {
-            return Results.ValidationProblem(res.Errors.GroupBy(e => e.Code.StartsWith("Password") ? "Password" : "Email").ToDictionary(group => group.Key,
-                group => group.Select(e => e.Description).ToArray()
-            ));
+            return Results.ValidationProblem(res.Errors
+                .GroupBy(e => e.Code.StartsWith("Password") ? "Password" : "Email")
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        // UserName is the email, so a taken email reports both codes: show it once.
+                        .Select(e => e.Code is "DuplicateUserName" or "DuplicateEmail"
+                            ? "An account with this email already exists."
+                            : e.Description)
+                        .Distinct()
+                        .ToArray()));
         }
 
         AuthCookies.SetAuthCookie(context, jwtOptions.Value, tokens.CreateToken(user));
