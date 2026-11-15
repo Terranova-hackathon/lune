@@ -1,0 +1,10 @@
+@let g = game();
+
+<div class="game-details__hero"
+	[style.background-image]="'url(' + g.backgroundImage + ')'"
+>
+	<img class="game-details__cover"
+		[src]="g.cover || g.backgroundImage || 'images/placeholder.png'"
+		[alt]="g.name + ' cover'" 
+	/>
+</div>

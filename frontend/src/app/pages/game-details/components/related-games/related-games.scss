@@ -1,0 +1,138 @@
+:host {
+	display: block;
+}
+
+.game-details {
+	&__related {
+		margin-top: 48px;
+		padding-top: 32px;
+		border-top: 1px solid var(--color-border);
+	}
+
+	&__related-grid.is-loading {
+	opacity: 0.5;
+	transition: opacity 0.2s ease;
+	}
+
+	&__related-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 16px;
+		margin-bottom: 24px;
+
+		h2 {
+		margin: 0;
+		}
+	}
+
+	&__related-count {
+		color: var(--color-muted);
+		font-size: 0.9rem;
+	}
+
+	&__related-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 20px;
+	}
+
+	&__related-card {
+		display: block;
+		min-width: 0;
+		overflow: hidden;
+
+		color: var(--color-text);
+		background: var(--color-surface-alt);
+
+		border: 1px solid var(--color-border);
+		border-radius: 12px;
+
+		text-decoration: none;
+
+		transition:
+		transform 0.2s ease,
+		border-color 0.2s ease;
+
+		img {
+		display: block;
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		object-fit: cover;
+		}
+
+		&:hover {
+		transform: translateY(-4px);
+		border-color: var(--color-primary);
+		}
+
+		&:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 4px;
+		}
+	}
+
+	&__related-info {
+		padding: 16px;
+
+		h3 {
+		margin: 0 0 8px;
+
+		font-size: 1rem;
+		font-weight: 600;
+		line-height: 1.4;
+		}
+	}
+
+	&__related-release {
+		margin-bottom: 10px;
+		color: var(--color-muted);
+		font-size: 0.85rem;
+	}
+
+	&__related-rating {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+
+		font-size: 0.9rem;
+		color: var(--color-muted);
+
+		i {
+		color: var(--color-rating);
+		}
+	}
+}
+
+h2 {
+	font-size: 1.4rem;
+	font-weight: 700;
+}
+
+p {
+	line-height: 1.7;
+}
+
+@media (max-width: 768px) {
+  .game-details__related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .game-details__related-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-details__related-card {
+    display: flex;
+
+    img {
+      width: 120px;
+      aspect-ratio: auto;
+      min-height: 130px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+  }
+}

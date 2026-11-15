@@ -18,271 +18,38 @@
 				</button>
 	</div>
 		} @else if (game(); as g) {
-			<div class="game-details__hero"
-				[style.background-image]="'url(' + g.backgroundImage + ')'"
-			>
-				<img class="game-details__cover"
-				 [src]="g.cover || g.backgroundImage || 'images/placeholder.png'"
-				 [alt]="g.name + ' cover'" 
-				/>
-			</div>
+			<app-game-hero [game]="g" />
+
 			<article class="game-details__content">
-				<div class="game-details__title-row">
-					<h1>{{ g.name }}</h1>
-					<button
-						type="button"
-						class="game-details__favorite"
-						[class.is-favorite]="favoriteIds().has(g.id)"
-						[disabled]="
-							(isLoggedIn() && !favoritesReady()) ||
-							favoriteBusyIds().has(g.id)"
-						[attr.aria-label]="
-							favoriteIds().has(g.id)
-							? 'Remove ' + g.name + ' from favorites'
-							: 'Add ' + g.name + ' to favorites'"
-						[attr.aria-pressed]="favoriteIds().has(g.id)"
-						(click)="toggleFavorite(g.id)"
-					>
-						<i
-							class="bi"
-							[class.bi-heart-fill]="favoriteIds().has(g.id)"
-							[class.bi-heart]="!favoriteIds().has(g.id)"
-							aria-hidden="true"
-						></i>
-					</button>
-				</div>
-					<p>Released: {{ g.released || 'unknown' }}</p>
-					@if (favoriteError()) {
-						<div
-							class="alert alert-danger mt-3"
-							role="alert"
-						>
-							{{ favoriteError() }}
-						</div>
-					}
-					<section>
-					<h2>About</h2>
-					<p class="game-details__description">{{ g.description || 'No description available.' }}</p>
-					@if (g.storyLine) {
-						<h3>Story</h3>
-						<p>{{ g.storyLine }}</p>
-					}
-				</section>
+				<app-game-heading
+				[game]="g"
+				[isFavorite]="favoriteIds().has(g.id)"
+				[favoriteBusy]="
+					(isLoggedIn() && !favoritesReady()) ||
+					favoriteBusyIds().has(g.id)
+				"
+				[favoriteError]="favoriteError()"
+				(favoriteToggled)="toggleFavorite($event)"
+				/>
+				<app-game-description [game]="g" />
 
 				@if (g.screenshots.length) {
-					<section>
-						<h2>Screenshots</h2>
-						<img class="game-details__main-shot" [src]="selectedShot() ?? g.screenshots[0]" [alt]="g.name + ' screenshot'" />
-						<div class="game-details__thumbs">
-							@for (shot of g.screenshots; track shot; let i = $index) {
-								<button type="button" 
-									[attr.aria-label]="'View screeenshot ' + (i + 1)" 
-									[attr.aria-pressed]="shot === (selectedShot() ?? g.screenshots[0])"
-									(click)="selectedShot.set(shot)"
-									[class.active]="shot === (selectedShot() ?? g.screenshots[0])"
-								>
-									<img [src]="shot" alt="" loading="lazy" />
-								</button>
-							}
-						</div>
-					</section>
+				<app-game-gallery
+					[screenshots]="g.screenshots"
+					[gameName]="g.name"
+				/>
 				}
+				<app-game-facts [game]="g" />
 
-				<dl class="game-details__facts">
-					<dt>Genres</dt>
-					<dd>
-						@for (genre of g.genres; track genre.value) {
-							<a
-								class="chip"
-								[routerLink]="['/games']"
-								[queryParams]="{ genres: genre.value }"
-							>{{ genre.name }}</a>
-						} @empty {
-							Unknown
-						}
-					</dd>
+				<app-game-ratings [game]="g" />
 
-					<dt>Platforms</dt>
-					<dd>
-						@for (platform of g.platforms; track platform.value) {
-							<a
-								class="chip"
-								[routerLink]="['/games']"
-								[queryParams]="{ platforms: platform.value }"
-							>{{ platform.name }}</a>
-						} @empty {
-							Unknown
-						}
-					</dd>
+				<app-related-games
+				  [relatedGames]="relatedGames()"
+				  [relatedLoading]="relatedLoading()"
+				  [relatedError]="relatedError()"
+				  (pageChanged)="changeRelatedPage($event)"
+				/>
 
-					<dt>{{ g.developers.length > 1 ? 'Developers' : 'Developer' }}</dt>
-					<dd>
-						@for (developer of g.developers; track developer.value) {
-							<a
-								class="chip"
-								[routerLink]="['/games']"
-								[queryParams]="{ developers: developer.value }"
-							>{{ developer.name }}</a>
-						} @empty {
-							Unknown
-						}
-					</dd>
-
-					<dt>{{ g.publishers.length > 1 ? 'Publishers' : 'Publisher' }}</dt>
-					<dd>
-						@for (publisher of g.publishers; track publisher.value) {
-							<a
-								class="chip"
-								[routerLink]="['/games']"
-								[queryParams]="{ publishers: publisher.value }"
-							>{{ publisher.name }}</a>
-						} @empty {
-							Unknown
-						}
-					</dd>
-				</dl>
-
-				<div class="game-details__ratings-prices">
-					<div class="game-details__scores">
-						<p class="game-details__rating">
-							@if (g.rating > 0) {
-								<i class="bi bi-star-fill" aria-hidden="true"></i> {{ g.rating | number:'1.1-1' }} / 5
-							} @else {
-								Not rated yet
-							}
-						</p>
-
-						<p class="game-details__metacritic">
-							Metacritic:
-							@if (g.metacritic != null) {
-								<span
-									class="metascore"
-									[class.good]="metacriticClass(g.metacritic) === 'good'"
-									[class.mixed]="metacriticClass(g.metacritic) === 'mixed'"
-									[class.bad]="metacriticClass(g.metacritic) === 'bad'"
-								>
-									{{ g.metacritic }}
-								</span>
-							} @else {
-								N/A
-							}
-						</p>
-					</div>
-
-					<app-price-comparison [gameId]="g.id" />
-				</div>
-
-				@if (relatedGames(); as relatedPage) {
-					@if (relatedPage.items.length > 0) {
-					  <section class="game-details__related">
-					
-						<div class="game-details__related-header">
-						  <h2>Related Games</h2>
-
-						  <span class="game-details__related-count">
-							@if (relatedPage.totalCount > relatedPage.items.length) {
-								Showing {{ relatedPage.items.length }} of {{ relatedPage.totalCount }}
-							} @else {
-								{{ relatedPage.items.length }} {{ relatedPage.items.length === 1 ? 'game' : 'games' }}
-							}
-						  </span>
-						</div>
-					
-						<div class="game-details__related-grid"
-							[class.is-loading]="relatedLoading()"
-						>
-						
-						  @for (related of relatedPage.items; track related.id) {
-							<a
-							  class="game-details__related-card"
-							  [routerLink]="['/games', related.id]"
-							>
-	
-							  <img
-								[src]="related.backgroundImage || 'images/placeholder.png'"
-								[alt]="related.name"
-								loading="lazy"
-							  />
-
-							  <div class="game-details__related-info">
-								<h3>{{ related.name }}</h3>
-
-								<p class="game-details__related-release">
-								  {{ related.released || 'Release unknown' }}
-								</p>
-
-								<div class="game-details__related-rating">
-								  @if (related.rating > 0) {
-									<i
-									  class="bi bi-star-fill"
-									  aria-hidden="true"
-									></i>
-
-									<span>
-									  {{ related.rating | number:'1.1-1' }} / 5
-									</span>
-								  } @else {
-									<span>Not rated</span>
-								  }
-								</div>
-							  </div>
-							</a>
-						  }
-						</div>
-
-						<div class="game-details__pagination-container">
-
-						<div class="game-details__loading-slot" role="status">
-							@if (relatedLoading()) {
-							<span
-								class="spinner-border spinner-border-sm text-primary"
-								aria-hidden="true"
-							></span>
-							<span>Loading related games…</span>
-							}
-						</div>
-
-						@if (relatedPage.totalPages > 1) {
-							<nav
-							class="game-details__related-pagination"
-							aria-label="Related games pagination"
-							>
-							<button
-								type="button"
-								class="game-details__page-button"
-								(click)="changeRelatedPage(relatedPage.page - 1)"
-								[disabled]="relatedLoading() || relatedPage.page <= 1"
-							>
-								<i class="bi bi-chevron-left" aria-hidden="true"></i>
-								Previous
-							</button>
-
-							<span class="game-details__page-indicator">
-								Page {{ relatedPage.page }} of {{ relatedPage.totalPages }}
-							</span>
-
-							<button
-								type="button"
-								class="game-details__page-button"
-								(click)="changeRelatedPage(relatedPage.page + 1)"
-								[disabled]="relatedLoading() || relatedPage.page >= relatedPage.totalPages"
-							>
-								Next
-								<i class="bi bi-chevron-right" aria-hidden="true"></i>
-							</button>
-							</nav>
-						}
-
-						</div>
-
-						@if (relatedError()) {
-							<p class="game-details__related-error" role="alert">
-								{{ relatedError() }}
-							</p>
-						}
-						</section>
-					}
-				}
 			</article>
 		}
 	</div>

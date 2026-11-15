@@ -1,0 +1,32 @@
+@let g = game();
+
+<div class="game-details__title-row">
+  <h1>{{ g.name }}</h1>
+
+  <button
+    type="button"
+    class="game-details__favorite"
+    [class.is-favorite]="isFavorite()"
+    [disabled]="favoriteBusy()"
+    [attr.aria-label]="isFavorite()
+      ? 'Remove ' + g.name + ' from favorites'
+      : 'Add ' + g.name + ' to favorites'"
+    [attr.aria-pressed]="isFavorite()"
+    (click)="favoriteToggled.emit(g.id)"
+  >
+    <i
+      class="bi"
+      [class.bi-heart-fill]="isFavorite()"
+      [class.bi-heart]="!isFavorite()"
+      aria-hidden="true"
+    ></i>
+  </button>
+</div>
+
+<p>Released: {{ g.released || 'unknown' }}</p>
+
+@if (favoriteError()) {
+  <div class="alert alert-danger mt-3" role="alert">
+    {{ favoriteError() }}
+  </div>
+}
