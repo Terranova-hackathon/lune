@@ -32,8 +32,6 @@ A list of games to buy or try later, separate from favorites.
 - **Already in place:** the Favorites module is a template: per-user rows with a copy of the game, a limit, paging, and cleanup on account deletion.
 - **What's needed:** a list type on the existing table, or a sibling module with its own schema. Combined with price comparison, a wishlist could flag price drops.
 
-_(details to add)_
-
 ### More price sources
 
 Epic Games Store, GOG and others.
@@ -41,15 +39,12 @@ Epic Games Store, GOG and others.
 - **Already in place:** each store is an `IPlatformPriceService`; adding one means one class and one registration line. See [ARCHITECTURE.md](./ARCHITECTURE.md#extensibility-adding-a-new-price-service).
 - **Also planned:** a fuller Steam integration with a Steam API key (`STEAM_API_KEY` in `.env.example`). Today the public store endpoint is used.
 
-_(details to add)_
-
 ### Release year filter
 
 Not required for the challenge (clarified with Terranova); results can already be sorted by release date. Listed here as a possible enhancement.
 
 - **Already in place:** IGDB stores each game's first release date, and the search already filters on it (games without a date are excluded).
 - **What's needed:** `releasedFrom` / `releasedTo` (year) parameters in the games search and its validation, a range control in the filters, and tests in the Bruno suite.
-  _(details to add)_
 
 ---
 
@@ -82,8 +77,6 @@ The original RAWG integration is still in the backend, commented out (`Lune.Game
 - **Unique display names at database level:** uniqueness is checked in code; a filtered unique index (allowing several users without a name) would also prevent two simultaneous sign-ups from taking the same name.
 - **Consistent validation error keys:** registration errors are keyed by field name (`Email`, `Password`), but Identity errors from the profile and delete endpoints are still keyed by Identity error code.
 
-_(details to add)_
-
 ---
 
 ## Deployment and operations
@@ -97,8 +90,6 @@ The current Docker setup is for development. A production setup is planned:
 - **A decision on the API reference:** `/docs` is currently only served in Development.
 - **CI:** run the frontend unit tests and the Bruno suite on every pull request.
 
-_(details to add)_
-
 ---
 
 ## Developer experience
@@ -106,5 +97,3 @@ _(details to add)_
 - **Update the mock API** (`mock-api/`) to match the current backend (IGDB data, prices, profile), so the frontend can be developed without SQL Server or API keys. It's currently not maintained and not part of the build.
 - **Lock icons in the API reference** for endpoints that need sign-in (a cookie security scheme in the OpenAPI document).
 - **Remove the `staticwebassets` warning** that `dotnet watch` logs on Linux (a path bug; workaround with a `Directory.Build.props`).
-
-_(details to add)_

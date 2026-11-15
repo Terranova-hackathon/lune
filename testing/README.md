@@ -75,8 +75,6 @@ curl http://localhost:3001/health/ready    # {"status":"Healthy",...}
 
 Open **http://localhost:3001/docs** in a browser. The reference is only served in the Development environment, which is what Docker Compose uses.
 
-<!-- Screenshot: Scalar overview, with the intro and the sidebar sections visible -->
-
 ### Finding your way around
 
 - **Introduction** (top of the page): what the API does, how sign-in works, and the conventions every endpoint follows: game IDs, paging, error format and what `503` means. Read this first.
@@ -84,13 +82,13 @@ Open **http://localhost:3001/docs** in a browser. The reference is only served i
 - **Endpoint page**: the method and route, a description of the behavior (including edge cases such as "safe to repeat"), the parameters with their limits, the request body, and every possible response with its schema.
 - **Models** (at the bottom of the sidebar): the shape of every request and response object.
 
-<!-- Screenshot: one endpoint page, e.g. GET /api/games, showing parameters and responses -->
+![Scalar API reference: the Search Games endpoint with its query parameters, a C# request example and the response schema](../docs/testing/Scalar_API_Docs.png)
 
 ### Sending requests
 
 Every endpoint has a **Test Request** button that opens a request client in the page. Fill in the parameters or body and send it. The response, status and headers appear next to it. Code samples for C# and other languages are shown on each endpoint too.
 
-<!-- Screenshot: the request client with a filled-in search and its response -->
+![the request client with a filled-in search and its response](../docs/images/testing/Scalar_Query_Response.png)
 
 ### Signing in from Scalar
 
@@ -138,8 +136,7 @@ This runs all 79 requests in order against the **Development** environment and w
 
 The command exits with a non-zero code if any test fails.
 
-<!-- Screenshot: terminal output with the execution summary table -->
-
+![Bruno CLI output: the last Teardown requests and the execution summary, 79 requests and 164 tests passed](../docs/testing/bruno_cli_run.png)
 Other options:
 
 ``` bash
@@ -158,9 +155,7 @@ Open the HTML report in a browser.
 - Use the **failed only** filter to hide passing requests.
 - Expand a request to see the URL that was actually sent, the request and response headers and bodies, and each test with its error message.
 
-<!-- Screenshot: HTML report summary -->
-
-<!-- Screenshot: an expanded failing request, showing the test error and the response body -->
+![Bruno HTML report: run information and the summary of requests and tests](../docs/testing/bruno_report_html.png)
 
 When a test fails, check the **Request URL** and **Response Body** first. They usually show whether the request was wrong or the API was.
 
@@ -204,7 +199,7 @@ Values such as `runEmail`, `runName`, `token`, `genreSlug` and `developerSlug` a
 
 Open the collection folder `testing/endpoint-testing/lune-reference-api` in the Bruno desktop app, or in VS Code with the Bruno extension (`bruno-api-client.bruno`). Select the **Development** environment, then open any request and send it on its own. The response and the results of its tests appear next to it.
 
-<!-- Screenshot: Bruno sidebar with the six folders and the environment selector -->
+![Bruno sidebar with the six folders and the environment selector](../docs/images/testing/bruno_vscode_sidebar.png)
 
 ![A single request and its results in Bruno](../docs/images/bruno_request_results.png)
 

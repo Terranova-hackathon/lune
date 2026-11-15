@@ -225,7 +225,7 @@ User responses are `{ "id": "...", "email": "...", "displayName": "..." }`; `dis
 | ----------------------- | --------------------------------------------------------------------------------------------------- |
 | `email`                 | Required, a valid email, not already registered                                                     |
 | `password`              | Required: at least 8 characters, with an uppercase letter, a lowercase letter, a digit and a symbol |
-| `displayName`           | Optional. If given, it must be unique (case-insensitive). Blank is treated as no name.              |
+| `displayName`           | Optional. If given: 2–20 characters and unique (case-insensitive). Blank is treated as no name.     |
 | `acceptedPrivacyPolicy` | Must be `true`. The consent time is recorded.                                                       |
 
 Responses: **201** with the user, a `Location: /api/auth/me` header and the auth cookie (the user is signed in); **400** with `errors` keyed by `Email`, `Password`, `DisplayName` or `AcceptedPrivacyPolicy`.

@@ -8,7 +8,7 @@ It was built for the **Terranova Software "Gaming Explorer" challenge** (Challen
 
 > **Names used in this repository:** _LunaNova_ is the product name you see in the app. _Lune_ is the internal project name, used in the code (`Lune.Api`, `Lune.Games`, ...), the Docker project and the database. _Terranova_ (Terranova Software) is the client the challenge was set by.
 
-<!-- Screenshot: home page with the featured games hero, search bar and filters (docs/images/home.png) -->
+![LunaNova home page: featured game carousel, search bar and advanced filters](docs/images/home-featured.png)
 
 ## Contents
 
@@ -38,9 +38,15 @@ It was built for the **Terranova Software "Gaming Explorer" challenge** (Challen
 | **Every state handled**         | Loading indicators, error messages, and "no results" messages across the app. Responsive from phone to desktop.                                                                |
 | **Tested and documented API**   | An interactive API reference (Scalar) and an automated Bruno test suite of 79 requests, including error cases.                                                                 |
 
-<!-- Screenshot: game details page with gallery and price comparison (docs/images/game-details.png) -->
+<p>
+  <img src="docs/images/game-details-overview.png" alt="Game details page: cover, description and storyline" width="49%">
+  <img src="docs/images/game-details-facts-ratings-prices.png" alt="Game facts, ratings and price comparison" width="49%">
+</p>
 
-<!-- Screenshot: search results with filters open, desktop and mobile side by side (docs/images/search.png) -->
+<p>
+  <img src="docs/images/search-advanced-filters.png" alt="Advanced search filters on desktop" width="70%">
+  <img src="docs/images/mobile-games.png" alt="Game search on a phone" width="26%">
+</p>
 
 ---
 
@@ -164,4 +170,7 @@ Why these choices were made, and how the pieces fit together: [docs/ARCHITECTURE
 | Minoka Kakizaki      | Lead Backend Developer              |
 | Francesca Frattaroli | Testing, Documentation & Deployment |
 
-<!-- Optional: links to GitHub profiles, the presentation video, a note on how AI tools were used (the brief asks teams to be able to explain this) -->
+## AI Use
+
+AI was used regularly for ideation, troubleshooting, documentation, script generation, and _some_ main codebase generation.
+No agentic coding was used and all generated code and documentation was manually vetted and modified by hand before inclusion  into the project repo.

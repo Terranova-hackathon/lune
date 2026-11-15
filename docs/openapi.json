@@ -1390,6 +1390,8 @@
             "description": "At least 8 characters, with an uppercase letter, a lowercase letter, a digit and a symbol."
           },
           "displayName": {
+            "maxLength": 20,
+            "minLength": 2,
             "type": [
               "null",
               "string"
