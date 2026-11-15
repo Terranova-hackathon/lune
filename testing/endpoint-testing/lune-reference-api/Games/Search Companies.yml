@@ -1,0 +1,149 @@
+info:
+  name: Search Companies
+  type: http
+  seq: 12
+  tags:
+  - Games
+http:
+  method: GET
+  url: '{{baseUrl}}/api/games/companies'
+  params:
+  - name: kind
+    value: developer
+    type: query
+  - name: search
+    value: '{{developer}}'
+    type: query
+  auth: inherit
+runtime:
+  scripts:
+  - type: after-response
+    code: |-
+      if (res.status === 200 && res.body.length) bru.setVar('developerSlug', res.body[0].slug);
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('returns at most 10 companies, most games first', () => {
+        const list = res.body;
+        expect(list).to.be.an('array').that.is.not.empty;
+        expect(list.length).to.be.at.most(10);
+        list.forEach(c => {
+          expect(c.slug).to.be.a('string');
+          expect(c.name).to.be.a('string');
+          expect(c.gamesCount).to.be.a('number');
+        });
+        for (let i = 1; i < list.length; i++) expect(list[i].gamesCount).to.be.at.most(list[i - 1].gamesCount);
+      });
+
+      test('every name contains the search term', () => {
+        const term = bru.getEnvVar('developer').toLowerCase();
+        res.body.forEach(c => expect(c.name.toLowerCase()).to.include(term));
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 200 Response
+  description: OK
+  request:
+    url: '{{baseUrl}}/api/games/companies'
+    method: GET
+    params:
+    - name: kind
+      value: ''
+      type: query
+      description: Required. `developer` or `publisher`.
+      disabled: true
+    - name: search
+      value: ''
+      type: query
+      description: 'Required. Part of the company name, 2–60 characters. Example: `ubi`.'
+      disabled: true
+  response:
+    status: 200
+    statusText: OK
+    headers:
+    - name: Content-Type
+      value: application/json
+    body:
+      type: json
+      data: |-
+        [
+          {
+            "slug": "",
+            "name": "",
+            "gamesCount": ""
+          }
+        ]
+- name: 400 Response
+  description: Bad Request
+  request:
+    url: '{{baseUrl}}/api/games/companies'
+    method: GET
+    params:
+    - name: kind
+      value: ''
+      type: query
+      description: Required. `developer` or `publisher`.
+      disabled: true
+    - name: search
+      value: ''
+      type: query
+      description: 'Required. Part of the company name, 2–60 characters. Example: `ubi`.'
+      disabled: true
+  response:
+    status: 400
+    statusText: Bad Request
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": "",
+          "errors": {}
+        }
+- name: 503 Response
+  description: Service Unavailable
+  request:
+    url: '{{baseUrl}}/api/games/companies'
+    method: GET
+    params:
+    - name: kind
+      value: ''
+      type: query
+      description: Required. `developer` or `publisher`.
+      disabled: true
+    - name: search
+      value: ''
+      type: query
+      description: 'Required. Part of the company name, 2–60 characters. Example: `ubi`.'
+      disabled: true
+  response:
+    status: 503
+    statusText: Service Unavailable
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": ""
+        }
+docs: Find developers or publishers by name, for example to fill a filter autocomplete. Matches anywhere in the name, case-insensitive. Returns up to 10 companies, those with the most games first. Pass a result's `slug` to the `developers` or `publishers` parameter of `GET /api/games`.

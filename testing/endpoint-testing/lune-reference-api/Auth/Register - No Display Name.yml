@@ -1,0 +1,48 @@
+info:
+  name: Register - No Display Name
+  type: http
+  seq: 14
+  tags:
+  - Auth
+http:
+  method: POST
+  url: '{{baseUrl}}/api/auth/register'
+  body:
+    type: json
+    data: |-
+      {
+        "email": "{{runEmail2}}",
+        "password": "{{password}}",
+        "acceptedPrivacyPolicy": true
+      }
+  auth: inherit
+runtime:
+  scripts:
+  - type: after-response
+    code: |-
+      // Keep the auth cookie so later requests can send it explicitly.
+      const raw = res.headers['set-cookie'];
+      const cookies = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      const auth = cookies.find(c => c.startsWith('Lune_auth='));
+      if (auth) bru.setVar('token', auth.split(';')[0].substring('Lune_auth='.length));
+  - type: tests
+    code: |-
+      test('returns 201', () => {
+        expect(res.status).to.equal(201);
+      });
+
+      test('returns the user shape', () => {
+        expect(res.body.id).to.be.a('string').and.not.be.empty;
+        expect(res.body).to.have.property('email');
+        expect(res.body).to.have.property('displayName');
+      });
+
+      test('displayName is null', () => {
+        expect(res.body.displayName).to.equal(null);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

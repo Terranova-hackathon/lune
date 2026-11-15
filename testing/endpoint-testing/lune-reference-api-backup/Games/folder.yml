@@ -1,0 +1,10 @@
+info:
+  name: Games
+  type: folder
+
+request:
+  auth: inherit
+
+docs:
+  content: Search the IGDB catalog, get a game's full details, and load the values the search filters accept. No sign-in needed.
+  type: text/markdown

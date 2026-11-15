@@ -1,0 +1,41 @@
+info:
+  name: Update Profile - Name Taken
+  type: http
+  seq: 16
+  tags:
+  - Auth
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/auth/profile'
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+  body:
+    type: json
+    data: |-
+      {
+        "displayName": "{{runName}}"
+      }
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      function hasErrorKey(body, name) {
+        const keys = Object.keys((body && body.errors) || {});
+        return keys.some(k => k.toLowerCase() === name.toLowerCase());
+      }
+
+      test('returns 400', () => {
+        expect(res.status).to.equal(400);
+      });
+
+      test('reports an error for DisplayName', () => {
+        expect(hasErrorKey(res.body, 'DisplayName'), JSON.stringify(res.body.errors)).to.equal(true);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

@@ -1,0 +1,59 @@
+info:
+  name: List Favorite IDs
+  type: http
+  seq: 10
+  tags:
+  - Favorites
+http:
+  method: GET
+  url: '{{baseUrl}}/api/favorites/ids'
+  auth: inherit
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('contains the saved game exactly once', () => {
+        const id = Number(bru.getEnvVar('gameId'));
+        expect(res.body).to.be.an('array');
+        expect(res.body.filter(x => x === id).length).to.equal(1);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 200 Response
+  description: OK
+  request:
+    url: '{{baseUrl}}/api/favorites/ids'
+    method: GET
+  response:
+    status: 200
+    statusText: OK
+    headers:
+    - name: Content-Type
+      value: application/json
+    body:
+      type: json
+      data: '[]'
+- name: 401 Response
+  description: Unauthorized
+  request:
+    url: '{{baseUrl}}/api/favorites/ids'
+    method: GET
+  response:
+    status: 401
+    statusText: Unauthorized
+    body:
+      type: text
+      data: ''
+docs: The Game Database IDs of all the signed-in user's saved games, as one unpaged array in no particular order. Use it to mark favorites in search results (for example a filled heart) without loading full game data. Requires sign-in.

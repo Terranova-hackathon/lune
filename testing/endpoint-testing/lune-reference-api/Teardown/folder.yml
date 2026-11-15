@@ -1,0 +1,9 @@
+info:
+  name: Teardown
+  type: folder
+  seq: 6
+request:
+  auth: inherit
+docs:
+  content: Deletes every account the test run created. Also tests Delete Account.
+  type: text/markdown

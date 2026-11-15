@@ -1,0 +1,77 @@
+info:
+  name: Get Filter Options
+  type: http
+  seq: 3
+  tags:
+    - Games
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/games/filters"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/games/filters"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "genres": [
+              {
+                "value": "",
+                "name": ""
+              }
+            ],
+            "platforms": [
+              {
+                "value": "",
+                "name": ""
+              }
+            ],
+            "orderings": [
+              {
+                "value": "",
+                "name": ""
+              }
+            ]
+          }
+  - name: 503 Response
+    description: Service Unavailable
+    request:
+      url: "{{baseUrl}}/api/games/filters"
+      method: GET
+    response:
+      status: 503
+      statusText: Service Unavailable
+      headers:
+        - name: Content-Type
+          value: application/problem+json
+      body:
+        type: json
+        data: |-
+          {
+            "type": "",
+            "title": "",
+            "status": "",
+            "detail": "",
+            "instance": ""
+          }
+
+docs: Everything the search filters accept, for building the filter UI. Each option has a `value` to send and a `name` to display. `genres` lists all Game Database genres(value = slug, for the `genres` parameter).`platforms` lists the platforms Lune supports (value = platform ID, for the `platforms` parameter). `orderings` lists the sort orders for the `ordering` parameter. Cached on the server for 12 hours.

@@ -1,0 +1,32 @@
+info:
+  name: Remove Favorite - Not Saved
+  type: http
+  seq: 17
+  tags:
+  - Favorites
+http:
+  method: DELETE
+  url: '{{baseUrl}}/api/favorites/:Id'
+  params:
+  - name: Id
+    value: '{{nonSteamGameId}}'
+    type: path
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 204', () => {
+        expect(res.status).to.equal(204);
+      });
+
+      // Removing a game that isn't saved is not an error.
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

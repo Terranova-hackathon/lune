@@ -1,0 +1,112 @@
+info:
+  name: Get Price Comparison
+  type: http
+  seq: 1
+  tags:
+    - Prices
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/prices/:Id"
+  params:
+    - name: Id
+      value: ""
+      type: path
+      description: Game Database game ID, the same ID used by /api/games.
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/prices/:Id"
+      method: GET
+      params:
+        - name: Id
+          value: ""
+          type: path
+          description: Game Database game ID, the same ID used by /api/games.
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "gameId": "",
+            "steamAppId": "",
+            "platforms": [
+              {
+                "platform": "",
+                "currentPrice": "",
+                "historicalLow": "",
+                "averagePrice": "",
+                "currency": "",
+                "url": ""
+              }
+            ]
+          }
+  - name: 404 Response
+    description: Not Found
+    request:
+      url: "{{baseUrl}}/api/prices/:Id"
+      method: GET
+      params:
+        - name: Id
+          value: ""
+          type: path
+          description: Game Database game ID, the same ID used by /api/games.
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: Content-Type
+          value: application/problem+json
+      body:
+        type: json
+        data: |-
+          {
+            "type": "",
+            "title": "",
+            "status": "",
+            "detail": "",
+            "instance": ""
+          }
+  - name: 503 Response
+    description: Service Unavailable
+    request:
+      url: "{{baseUrl}}/api/prices/:Id"
+      method: GET
+      params:
+        - name: Id
+          value: ""
+          type: path
+          description: Game Database game ID, the same ID used by /api/games.
+    response:
+      status: 503
+      statusText: Service Unavailable
+      headers:
+        - name: Content-Type
+          value: application/problem+json
+      body:
+        type: json
+        data: |-
+          {
+            "type": "",
+            "title": "",
+            "status": "",
+            "detail": "",
+            "instance": ""
+          }
+
+docs: Prices for a game on Steam and GG.deals, (currently only in the Italian region). Games are matched to stores by their Steam app ID, so a game that IGDB doesn't link to Steam returns 404. Steam gives the current price only (`historicalLow` is null); GG.deals gives the current price and the historical low. `averagePrice` is not filled in yet. If one store fails, the other is still returned. 503 means no store returned a price; this currently also happens for free games. Prices are cached for up to 6 hours.

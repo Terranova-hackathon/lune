@@ -1,0 +1,28 @@
+name: Development
+variables:
+- name: baseUrl
+  value: http://localhost:3001
+- name: displayName
+  value: tester
+- name: email
+  value: test@test.com
+- name: password
+  value: Password1!
+- name: gameId
+  value: '1020'
+- name: steamId
+  value: '362003'
+- name: publisher
+  value: EA_games
+- name: developer
+  value: Nintendo
+- secret: true
+  name: token
+- name: displayName2
+  value: tester2
+- name: email2
+  value: test2@test.com
+- name: nonSteamGameId
+  value: '7346'
+- name: unknownGameId
+  value: '999999999'

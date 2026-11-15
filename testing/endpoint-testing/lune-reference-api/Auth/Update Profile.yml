@@ -1,0 +1,114 @@
+info:
+  name: Update Profile
+  type: http
+  seq: 23
+  tags:
+  - Auth
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/auth/profile'
+  body:
+    type: json
+    data: |-
+      {
+        "displayName": "   {{runNameNew}}   "
+      }
+  auth: inherit
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('returns the user shape', () => {
+        expect(res.body.id).to.be.a('string').and.not.be.empty;
+        expect(res.body).to.have.property('email');
+        expect(res.body).to.have.property('displayName');
+      });
+
+      test('saves the trimmed name', () => {
+        expect(res.body.displayName).to.equal(bru.getVar('runNameNew'));
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 200 Response
+  description: OK
+  request:
+    url: '{{baseUrl}}/api/auth/profile'
+    method: PUT
+    body:
+      type: json
+      data: |-
+        {
+          "displayName": ""
+        }
+  response:
+    status: 200
+    statusText: OK
+    headers:
+    - name: Content-Type
+      value: application/json
+    body:
+      type: json
+      data: |-
+        {
+          "id": "",
+          "email": "",
+          "displayName": ""
+        }
+- name: 400 Response
+  description: Bad Request
+  request:
+    url: '{{baseUrl}}/api/auth/profile'
+    method: PUT
+    body:
+      type: json
+      data: |-
+        {
+          "displayName": ""
+        }
+  response:
+    status: 400
+    statusText: Bad Request
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": "",
+          "errors": {}
+        }
+- name: 401 Response
+  description: Unauthorized
+  request:
+    url: '{{baseUrl}}/api/auth/profile'
+    method: PUT
+    body:
+      type: json
+      data: |-
+        {
+          "displayName": ""
+        }
+  response:
+    status: 401
+    statusText: Unauthorized
+    body:
+      type: text
+      data: ''
+docs: Change the signed-in user's display name. The name is trimmed, must be 2–20 characters, and must not be used by another account (case-insensitive). Returns the updated user. Requires sign-in.
