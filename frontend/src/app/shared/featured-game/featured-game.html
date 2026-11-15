@@ -26,7 +26,7 @@
 				<div class="featured__details">
 					<a
 						class="featured__link"
-						routerLink="/games"
+						[routerLink]="['/games', game.id]"
 						[queryParams]="{ search: game.name }"
 					>
 						<h3 class="featured__name">{{ game.name }}</h3>
