@@ -47,25 +47,17 @@
   }
 }
 
-.games-page {
-  // room so the fixed compare tray never covers the pagination
-  &:has(.compare-tray) {
-    padding-bottom: 120px !important;
-  }
-}
-
 // COMPARE TRAY
 .compare-tray {
-  position: fixed;
-  left: 50%;
+  position: sticky;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 90;
-  transform: translateX(-50%);
 
   display: flex;
   align-items: center;
   gap: 16px;
-  width: min(960px, calc(100% - 32px));
+  width: min(960px, 100%);
+  margin: 32px auto 0;
   padding: 10px 12px;
 
   border: 1px solid var(--color-border);
@@ -90,7 +82,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
+    flex-shrink: 1 1 0;
+    min-width: 0;
     max-width: 200px;
     padding: 4px 4px 4px 4px;
     border: 1px solid var(--color-border);
