@@ -130,4 +130,22 @@
 			}
 		}
 	}
+	&__compare {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 12px;
+		color: var(--color-muted);
+		font-size: 0.9rem;
+		cursor: pointer;
+	
+		input {
+			accent-color: var(--color-primary);
+		}
+
+		&.is-disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
 }
