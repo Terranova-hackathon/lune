@@ -21,9 +21,9 @@ request:
 
 docs:
   content: |-
-    # Lune Game API Endpoints
+    # Lune Game API Endpoints Manually Configured Tests
 
-    Endpoints for the backend service of the Lune game search site.
+    These are manually built endpoints that the developer can add to and modify directly. For document-generated endpoints, see the collection `Lune Reference API`
 
     For full request and response details, run the backend and open the API reference at [`/docs`](http://localhost:3001/docs) (development only). The OpenAPI document is at `/openapi/v1.json`, and a copy is kept in [`openapi.json`](openapi.json).
 

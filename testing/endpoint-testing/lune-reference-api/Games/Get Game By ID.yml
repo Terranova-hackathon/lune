@@ -6,7 +6,7 @@ info:
   - Games
 http:
   method: GET
-  url: '{{baseUrl}}/api/games/:id'
+  url: '{{baseUrl}}/api/games/:id?page=1&pageSize=2'
   params:
   - name: id
     value: '{{gameId}}'
