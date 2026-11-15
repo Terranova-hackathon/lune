@@ -12,9 +12,10 @@ import { GamesPagination } from './components/games-pagination/games-pagination'
 import { GamesLoginPrompt } from './components/games-login-prompt/games-login-prompt';
 import { CompareService, MAX_COMPARE } from '../../core/services/compare-service';
 import { Router } from '@angular/router';
+import { CompareTray } from '../../shared/compare-tray/compare-tray';
 
 @Component({
-  imports: [GameCard, FormsModule, GameFilters, GamesLoginPrompt, GamesPagination, ScrollControls],
+  imports: [CompareTray, GameCard, FormsModule, GameFilters, GamesLoginPrompt, GamesPagination, ScrollControls],
   providers: [GamesData, GamesFavorites, GamesQuery],
   selector: 'app-games',
   styleUrl: './games.scss',
@@ -28,11 +29,9 @@ export class Games implements OnInit {
   private readonly loginDialog = viewChild(GamesLoginPrompt);
   private readonly query = inject(GamesQuery);
   private readonly compare = inject(CompareService);
-  private readonly router = inject(Router);
 
-  readonly selectedGames = this.compare.selected;
   readonly compareFull = this.compare.isFull;
-  readonly maxCompare = MAX_COMPARE;
+
 
   searchInput = '';
   readonly favoriteIds = this.favorites.favoriteIds;
@@ -111,20 +110,5 @@ export class Games implements OnInit {
 
   toggleCompare(game: GameModel): void {
     this.compare.toggle(game);
-  }
-
-  removeFromComparison(id: number): void {
-    this.compare.remove(id);
-  }
-
-  clearComparison(): void {
-    this.compare.clear();
-  }
-
-  openComparison(): void {
-    if (this.selectedGames().length < 2) return;
-    this.router.navigate(['/compare'], {
-      queryParams: { ids: this.compare.ids().join(',') }
-    });
   }
 }

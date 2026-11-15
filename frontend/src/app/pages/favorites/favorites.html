@@ -45,6 +45,9 @@
 							[isFavorite]="true"
 							[favoriteBusy]="removingIds().has(favorite.id)"
 							(favoriteToggled)="removeFavorite($event)"
+							[isCompared]="compare.has(favorite.id)"
+							[compareDisabled]="compare.isFull() && !compare.has(favorite.id)"
+							(compareToggled)="compare.toggle($event)"
 						/>
 					</div>
 				}
@@ -76,6 +79,7 @@
 			}
 		}
 	}
+	<app-compare-tray />
 </main>
 
 <app-scroll-controls />

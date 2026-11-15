@@ -1,0 +1,45 @@
+  <!-- COMPARE TRAY -->
+@if (compare.count()) {
+<aside class="compare-tray" aria-label="Games selected for comparison">
+	<ul class="compare-tray__list">
+	@for (game of compare.selected(); track game.id) {
+		<li class="compare-tray__item">
+		<img [src]="game.backgroundImage || 'images/placeholder.png'" alt="" />
+		<span>{{ game.name }}</span>
+		<button
+			type="button"
+			[attr.aria-label]="'Remove ' + game.name + ' from comparison'"
+			(click)="compare.remove(game.id)"
+		>
+			<i class="bi bi-x" aria-hidden="true"></i>
+		</button>
+		</li>
+	}
+	</ul>
+
+	<div class="compare-tray__actions">
+	<span class="compare-tray__count" aria-live="polite">
+		{{ compare.count() }} / {{ maxCompare }}
+		@if (compare.count()) {
+		· pick one more
+		}
+	</span>
+	<button
+		type="button"
+		class="btn btn-outline-secondary btn-sm"
+		(click)="compare.clear()"
+	>
+		Clear
+	</button>
+	<button
+		type="button"
+		class="btn btn-primary btn-sm"
+		[disabled]="compare.count() < 2"
+		(click)="open()"
+	>
+		<i class="bi bi-layout-three-columns" aria-hidden="true"></i>
+		Compare
+	</button>
+	</div>
+</aside>
+}
