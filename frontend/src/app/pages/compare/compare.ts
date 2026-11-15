@@ -1,6 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DecimalPipe, Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
@@ -42,6 +42,8 @@ export class Compare {
 	private readonly gameService = inject(GameService);
 	private readonly priceService = inject(GamePriceService);
 	private readonly compare = inject(CompareService);
+	private readonly location = inject(Location);
+
 	readonly gamesNavigation = inject(GamesNavigationService);
 
 	// already-fetched games, so removing a column doesn't refetch the rest
@@ -111,7 +113,7 @@ export class Compare {
 	}
 
 	goBack(): void {
-		this.router.navigateByUrl(this.gamesNavigation.gamesUrl());
+		this.location.back();
 	}
 
 	validStoreUrl(url: string | null): string | null {

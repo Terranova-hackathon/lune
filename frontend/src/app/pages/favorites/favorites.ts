@@ -7,9 +7,11 @@ import { catchError, combineLatest, distinctUntilChanged, EMPTY, map, startWith,
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PagedResult } from '../../core/models/paged-result.model';
 import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
+import { CompareTray } from '../../shared/compare-tray/compare-tray';
+import { CompareService } from '../../core/services/compare-service';
 
 @Component({
-  imports: [RouterLink, GameCard, ScrollControls],
+  imports: [CompareTray, RouterLink, GameCard, ScrollControls],
   selector: 'app-favorites',
   styleUrl: './favorites.scss',
   templateUrl: './favorites.html',
@@ -22,6 +24,7 @@ export class Favorites implements OnInit {
   private readonly retryRequest = new Subject<void>();
 
   readonly pageSize = 20;
+  readonly compare = inject(CompareService);
 
   favorites = signal<FavoriteModel[]>([]);
   totalCount = signal(0);
