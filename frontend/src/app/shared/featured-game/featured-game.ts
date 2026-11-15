@@ -1,7 +1,7 @@
-import { afterRenderEffect, Component, ElementRef, input, signal, viewChild } from '@angular/core';
+import { afterRenderEffect, Component, DestroyRef, ElementRef, inject, input, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameDetailsModel } from '../../core/models/game.model';
-import { interval } from 'rxjs';
+import { Subscription, timer } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -14,6 +14,8 @@ export class FeaturedGame {
   games = input.required<GameDetailsModel[]>();
 
   private readonly track = viewChild<ElementRef<HTMLElement>>('track');
+  private readonly destroyRef = inject(DestroyRef);
+  private autoplayTimer?: Subscription;
   private isHovered = false;
   private isFocused = false;
   readonly autoplayPaused = signal(false);
@@ -24,15 +26,7 @@ export class FeaturedGame {
     afterRenderEffect(() => {
       this.games();
       this.updateScrollState();
-    });
-
-    interval(15_000)
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => {
-        const count = this.games().length;
-        if (count <= 1 || this.autoplayPaused()) return;
-
-        this.scrollToIndex((this.activeIndex() + 1) % count);
+      this.scheduleAutoplay();
     });
   }
 
@@ -89,23 +83,43 @@ export class FeaturedGame {
   }
 
   private updateAutoplayPause(): void {
-    this.autoplayPaused.set(this.isHovered || this.isFocused);
+    this.autoplayPaused.set(this.isHovered);
+    this.scheduleAutoplay();
   }
 
-  private lastWheelNavigationAt = 0;
+  private scheduleAutoplay(): void {
+    this.autoplayTimer?.unsubscribe();
 
-  onWheel(event: WheelEvent): void {
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    if (this.games().length <= 1) return;
 
-    const nextIndex = this.activeIndex() + Math.sign(event.deltaY);
-    if (nextIndex < 0 || nextIndex >= this.games().length) return;
+    const delay = this.isFocused ? 20_000 : 10_000;
+
+    this.autoplayTimer = timer(delay)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const count = this.games().length;
+        if (count > 1) {
+          this.scrollToIndex((this.activeIndex() + 1) % count);
+        }
+
+        this.scheduleAutoplay();
+      });
+  }
+
+  onCarouselKeydown(event: KeyboardEvent): void {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+
+    const direction =
+      event.key === 'ArrowRight' ? 1 :
+      event.key === 'ArrowLeft' ? -1 :
+      0;
+
+    if (!direction) return;
+
+    const count = this.games().length;
+    if (count <= 1) return;
 
     event.preventDefault();
-
-    const now = Date.now();
-    if (now - this.lastWheelNavigationAt < 700) return;
-
-    this.lastWheelNavigationAt = now;
-    this.scrollToIndex(nextIndex);
+    this.scrollToIndex((this.activeIndex() + direction + count) % count);
   }
 }
