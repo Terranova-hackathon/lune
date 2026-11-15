@@ -1,6 +1,6 @@
 # Lune Architecture
 
-Lune (commercial name: LunaNova) is an open-source game discovery and price comparison platform built with **ASP.NET Core** (backend) and **Angular** (frontend), deployed via Docker.
+Lune (commercial name: LunaNova) is an open-source game discovery and price comparison platform built with **ASP.NET Core** (backend) and **Angular** (frontend), for the Terranova Software _Gaming Explorer_ challenge. It runs with Docker Compose.
 
 ## Design Philosophy
 
@@ -15,19 +15,20 @@ The backend follows a **modular architecture** where each feature owns its domai
 
 ### Technology Choices
 
-| Layer              | Technology                                                                           | Why                                                                           |
-| ------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| **Backend**        | ASP.NET Core 10 (.NET SDK 10)                                                        | Type-safe, high-performance, modular with dependency injection                |
-| **Frontend**       | Angular 22                                                                           | Component-based, reactive (RxJS), tested (Vitest), modern tooling             |
-| **Database**       | SQL Server 2022                                                                      | Enterprise-grade, Schema-per-module isolation, EF Core integration            |
-| **Deployment**     | Docker Compose                                                                       | Local dev parity with production, service networking, easy reset              |
-| **Authentication** | JWT in HttpOnly cookies                                                              | CSRF-safe, works across subdomains, XSS-resistant storage                     |
-| **Game Data**      | IGDB (via Twitch OAuth)                                                              | Comprehensive game metadata, regular updates, free tier available             |
-| **Pricing Data**   | GG.deals  and Steam for current prices and historical lows; regional support (Italy) | IGDB didnt have pricing data, requiring additional APIs for price comparison. |
+| Layer                | Technology                                                                | Why                                                                                                                                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend**          | ASP.NET Core 10 (.NET SDK 10)                                             | Type-safe, high-performance, modular with dependency injection                                                                                                                                                            |
+| **Frontend**         | Angular 22                                                                | Component-based, reactive (RxJS), tested (Vitest), modern tooling                                                                                                                                                         |
+| **Database**         | SQL Server 2022                                                           | Enterprise-grade, Schema-per-module isolation, EF Core integration                                                                                                                                                        |
+| **Runtime**          | Docker Compose                                                            | One command starts the database, backend and frontend with hot reload; easy reset. A production configuration is planned ([FUTURE.md](./FUTURE.md#deployment-and-operations)).                                            |
+| **Authentication**   | ASP.NET Core Identity, JWT in an HttpOnly cookie                          | The token can't be read by JavaScript (XSS-resistant); `SameSite=Lax` limits cross-site requests; no token handling in the frontend                                                                                       |
+| **Game Data**        | IGDB (via Twitch OAuth)                                                   | Comprehensive game metadata, regular updates, free tier available. Replaced RAWG (the API the brief suggests) after a RAWG service outage; IGDB has no Metacritic score, so its aggregated critic rating is used instead. |
+| **Pricing Data**     | GG.deals and Steam for current prices and historical lows; Italian region | IGDB has no pricing data, so price comparison needs additional APIs.                                                                                                                                                      |
+| **API docs & tests** | OpenAPI + Scalar, Bruno                                                   | The reference is generated from the code, so it stays current; Bruno collections are plain files in Git                                                                                                                   |
 
 ---
 
-## Docker Deployment
+## Docker Setup
 
 ### Container Architecture
 
@@ -35,7 +36,7 @@ The backend follows a **modular architecture** where each feature owns its domai
 graph TB
     subgraph "Docker Compose Network (private-network)"
         SQL["SQL Server 2022<br/>Port: 1433<br/>Database: Lune"]
-        API["ASP.NET Core API<br/>Port: 3001<br/>Health: /health"]
+        API["ASP.NET Core API<br/>Port: 3001<br/>Health: /health/ready"]
         WEB["Angular Frontend<br/>Port: 8080<br/>Dev Server"]
     end
 
@@ -146,13 +147,13 @@ graph LR
 #### GamesModule
 
 - **Data Source**: IGDB (Internet Game Database) via Twitch OAuth token
-- **Caching**: In-memory cache for filter options (genres, platforms)
+- **Caching**: In-memory cache for search results (5 minutes), game details, filter options and featured-game candidates (10 minutes each); configurable through the `Igdb` options
 - **Exports**: `IGameCatalog` interface for other modules to look up game metadata, external store IDs (Steam, GOG, Epic, etc.)
 
 #### FavoritesModule
 
-- **Storage**: SQL Server schema `favorites` (one-per-user limit: 1,000)
-- **Data Model**: Favorites store a snapshot of the game at save time (name, image, genres, platforms) + the IGDB game ID
+- **Storage**: SQL Server schema `favorites`, up to 1,000 favorites per user
+- **Data Model**: Favorites store a snapshot of the game at save time (name, image, release date, ratings, genres, platforms) + the IGDB game ID, so the favorites list needs no IGDB calls
 - **Data Cleanup**: Implements `IUserDataCleaner` to delete all a user's favorites when account is deleted
 
 #### PricesModule
@@ -165,7 +166,7 @@ graph LR
 - **Steam API** ⚡ — Current price (public endpoint, Italian region)
 - **GG.deals API** ⚡ — Current price + historical low (Italian region)
 - **Dependency Injection**: Receives `IGameCatalog` (Scoped) from Games module via DI container
-- **Caching**: 6-hour in-memory cache per game
+- **Caching**: 6-hour in-memory cache per game and store; Steam app ID lookups cached for 24 hours
 - **Error Handling**: If one platform fails, still return data from others
 
 ## Extensibility: Adding a New Price Service
@@ -176,31 +177,42 @@ The **PricesModule** is designed to scale to new price platforms without modifyi
 
 Each price platform implements `IPlatformPriceService`:
 
+``` csharp
+public interface IPlatformPriceService
+{
+    string PlatformName { get; }   // e.g. "Steam", "GG.deals"
+
+    // Returns null if the game isn't available on this platform.
+    Task<PlatformPrice?> GetPriceAsync(int steamAppId, CancellationToken cancellationToken = default);
+}
+```
+
+`MultiPlatformPriceService` receives every registered implementation through dependency injection, calls each one, and combines the results.
+
 ### Adding a New Platform (e.g., Epic Games Store)
 
-1. **Create a new service** in `backend/src/Lune.Prices/Services/ExternalServices/EpicGamesService.cs`:
-2. Implement `IPlatformPriceService`
-3. Make HTTP calls to Epic's API
-4. Return `PlatformPrice` or null if game not found
+1. **Create a service** in `backend/src/Lune.Prices/Services/ExternalServices/EpicGamesService.cs` that implements `IPlatformPriceService`: call the store's API and return a `PlatformPrice`, or `null` if the store doesn't have the game.
+2. **Add options** in `backend/src/Lune.Prices/Options/EpicGamesOptions.cs`: base URL, API key, cache duration, region.
+3. **Register it** in `backend/src/Lune.Prices/PricesModule.cs`, next to Steam and GG.deals:
 
-5. **Add configuration** in `backend/src/Lune.Prices/Options/EpicGamesOptions.cs`:
-6. Base URL, API key, cache duration, region
+   ``` csharp
+   services.Configure<EpicGamesOptions>(configuration.GetSection(EpicGamesOptions.SectionName));
+   services.AddHttpClient<EpicGamesService>();
+   services.AddScoped<IPlatformPriceService>(sp => sp.GetRequiredService<EpicGamesService>());
+   ```
 
-7. **Register in PricesModule** (`backend/src/Lune.Prices/PricesModule.cs`):
+1. **Add the configuration:** the key in `.env.example` (and your `.env`), and its mapping in the backend's `environment` list in `docker-compose.yml`:
 
-``` csharp
-services.Configure<EpicGamesOptions>(configuration.GetSection(EpicGamesOptions.SectionName));
-services.AddHttpClient<EpicGamesService>();
-services.AddScoped<IPlatformPriceService>(sp => sp.GetRequiredService<EpicGamesService>());
-```
+   ``` env
+   EPIC_GAMES_API_KEY=...
 
-1. **Add environment variables** to `.env.example` and `.env`:
+   ```
 
-``` env
-EPIC_GAMES_API_KEY=...
-```
+   ``` yaml
+   - EpicGames__ApiKey=${EPIC_GAMES_API_KEY}
+   ```
 
-1. **No other code changes needed** — the price endpoint automatically includes the new platform
+1. **No other code changes are needed:** `GET /api/prices/{id}` includes the new store automatically. Add a test for it to the Bruno suite.
 
 ### Extension Diagram
 
@@ -233,16 +245,34 @@ graph LR
     style GOG fill:#c0c0c0,color:#333
 ```
 
+## Frontend Architecture
+
+The Angular app (`frontend/src/app`) is organized by responsibility:
+
+| Folder           | Contents                                                                                                                                                                                                                                        |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pages/`         | One folder per route: home, games (search results), game details, favorites, login, register, account, privacy, about. Larger pages are split into child components (e.g. the game details page: hero, gallery, facts, ratings, related games). |
+| `shared/`        | Reusable components: navbar, footer, game card, filters, company search, featured-game carousel, price comparison.                                                                                                                              |
+| `core/services/` | One service per backend area (`AuthService`, `GameService`, `FavoriteService`, `GamePriceService`), plus the theme and search-navigation state.                                                                                                 |
+| `core/guards/`   | `authGuard`, which protects the favorites and account routes and sends guests to the login page.                                                                                                                                                |
+| `core/models/`   | TypeScript types matching the API's responses.                                                                                                                                                                                                  |
+
+- **State** is held in Angular signals; data flows use RxJS (debounced search input, `switchMap` to cancel outdated requests).
+- **The signed-in user** is loaded once at startup (`GET /api/auth/me`, via an app initializer). The auth cookie itself is never touched by the frontend.
+- **Search state lives in the URL** as query parameters, so results can be bookmarked, shared and reloaded.
+- **API calls** use relative URLs (`/api/...`). In development the Angular dev server proxies them to the backend (`proxy.conf.js`), so frontend and API share one origin.
+
+<!-- Diagram: page -> service -> API flow -->
+
 ## Health & Monitoring
 
 The backend exposes two health endpoints:
 
-- **GET `/health`** — Liveness probe (process running?). Returns `"ok"` or 503.
-- **GET `/health/ready`** — Readiness probe (database connected?). Returns 200 or 503 with status.
+- **GET `/health`** — Liveness probe (process running?). Returns `ok`.
+- **GET `/health/ready`** — Readiness probe (database reachable?). Returns 200 or 503 with the status of each check.
 
-Docker Compose health checks use `/health` for the backend service; startup delay is 30s with 20 retries (100s max).
+The backend's Docker Compose health check uses `/health/ready` (5-second interval, 30-second start period, 20 retries), and the frontend container starts only once it reports healthy.
 
 ---
 
-For detailed API contracts, see [docs/API.md](./API.md).
-For database schema, see [docs/DATABASE.md](./DATABASE.md).
+For the API, see [API.md](./API.md). For the database schema, see [DATABASE.md](./DATABASE.md). For what's planned, see [FUTURE.md](./FUTURE.md).

@@ -1,256 +1,322 @@
-# Lune API reference (for building a mock)
+# API overview
 
-Everything the Angular frontend calls, with request/response shapes, status codes and rules. It was written from the real backend code, so a mock that follows it will behave like the real API. The database schema is in [DATABASE.md](./DATABASE.md).
+An overview of the Lune backend API: what each endpoint does, how authentication works, and the conventions every endpoint follows.
 
-Source of truth in the backend repo:
+**The complete, always-current reference** (every parameter, request body, response schema and status code) is generated from the code. With the backend running:
 
-| Area | Routes declared in | DTOs |
-|---|---|---|
-| Auth | `backend/src/Lune.Auth/Endpoints/AuthEndpoints.cs` | `Lune.Auth/Contracts/AuthContracts.cs` |
-| Games | `backend/src/Lune.Games/Endpoints/GamesEndpoints.cs` | `Lune.Games/Contracts/GameContracts.cs` |
-| Favorites | `backend/src/Lune.Favorites/Endpoints/FavoritesEndpoints.cs` | `Lune.Favorites/Contracts/FavoriteContracts.cs` |
-| Paging | | `Lune.Shared/Paging/PagedResult.cs` |
+- **Interactive reference (Scalar):** [http://localhost:3001/docs](http://localhost:3001/docs). Every endpoint can be tried from the browser.
+- **OpenAPI document:** [http://localhost:3001/openapi/v1.json](http://localhost:3001/openapi/v1.json). A copy is kept in [`openapi.json`](./openapi.json).
+
+The database behind it is described in [DATABASE.md](./DATABASE.md), the module design in [ARCHITECTURE.md](./ARCHITECTURE.md), and the automated tests in [testing/README.md](../testing/README.md).
+
+## Contents
+
+1. [Conventions](#1-conventions)
+2. [Endpoints](#2-endpoints)
+3. [Games](#3-games)
+4. [Prices](#4-prices)
+5. [Auth](#5-auth)
+6. [Favorites](#6-favorites)
+7. [Health](#7-health)
+8. [Example requests](#8-example-requests)
+
+---
 
 ## 1. Conventions
 
-- **Base URL:** same origin as the frontend. Angular calls relative URLs such as `/api/games`. In development the dev server proxies `/api` to the backend (`frontend/proxy.conf.json`). Point that proxy at the mock.
-- **Format:** JSON in and out, **camelCase** property names, `Content-Type: application/json`.
-- **Dates:** `addedAtUtc` is an ISO 8601 UTC string. `released` is a plain `YYYY-MM-DD` string or `null`.
-- **No CORS** is needed while the frontend and API share an origin (via the proxy).
+- **Base URL:** `http://localhost:3001` in development. The Angular app calls relative URLs (`/api/games`), which its dev server proxies to the backend (`frontend/proxy.conf.js`), so the browser sees a single origin and no CORS is needed.
+- **Format:** JSON in and out, with camelCase property names.
+- **Game IDs** are IGDB game IDs, and the same ID is used by `/api/games`, `/api/favorites` and `/api/prices`.
+- **Dates:** `released` is a `YYYY-MM-DD` string, or `null` if unknown.
+- **Ratings:** `rating` is IGDB's user rating, scaled to 0–5. `metacritic` is IGDB's aggregated critic rating (0–100); IGDB has no Metacritic data, so this stands in for it.
+- **Paging:** list endpoints take `page` (from 1; lower values become 1) and `pageSize` (clamped to 1–40) and return:
 
-### Authentication (cookie, not a header)
+``` json
+{ "items": [], "page": 1, "pageSize": 20, "totalCount": 0, "totalPages": 0 }
+```
 
-- Login and register set an **HttpOnly cookie** named `Lune_auth` holding a JWT. The browser sends it automatically. Angular never reads it and never sets an `Authorization` header.
-- Attributes: `HttpOnly`, `SameSite=Lax`, `Path=/`, 24 hour expiry. `Secure` only when the request is HTTPS.
-- Logout deletes the cookie.
-- A mock can use any opaque session value. It only has to check that the cookie maps to a user.
+- **Filter options** (genres, platforms, companies) are `{ "value": "...", "name": "..." }` objects: `value` is what you send back to the API, `name` is for display.
 
-| Route group | Auth needed |
-|---|---|
-| `/api/auth/register`, `/login`, `/logout` | No |
-| `/api/auth/me` | Yes |
-| `/api/games/**` | Yes |
-| `/api/favorites/**` | Yes |
+### Authentication
 
-A protected route without a valid cookie returns **`401` with an empty body**.
+Sign-in uses a JWT in an **HttpOnly cookie** named `Lune_auth`, not an `Authorization` header.
 
-### Frontend behavior to preserve
+- `POST /api/auth/register` and `POST /api/auth/login` set the cookie; `POST /api/auth/logout` and `DELETE /api/auth/delete-account` clear it.
+- Cookie attributes: `HttpOnly`, `SameSite=Lax`, `Path=/`, 24-hour expiry, `Secure` when the request is HTTPS.
+- The browser sends it automatically. The frontend never reads it.
+- The user is always taken from the cookie, never from the request.
 
-- On startup Angular calls `GET /api/auth/me`. A `401` just means "not logged in".
-- A `401` from any non-`/api/auth/*` call clears the user and redirects to `/login`.
-- `GET /api/favorites/ids` is fetched whenever a user is logged in.
+| Routes                                        | Sign-in required |
+| --------------------------------------------- | ---------------- |
+| `/api/games/**`, `/api/prices/**`             | No               |
+| `/api/auth/register`, `/login`, `/logout`     | No               |
+| `/api/auth/me`, `/profile`, `/delete-account` | Yes              |
+| `/api/favorites/**`                           | Yes              |
+| `/health`, `/health/ready`                    | No               |
 
-### Error format (ProblemDetails)
+A protected route without a valid cookie returns **`401`** with an empty body.
 
-```json
+### Errors
+
+Errors use the standard [Problem Details](https://www.rfc-editor.org/rfc/rfc9457) format:
+
+``` json
 {
   "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
   "title": "One or more validation errors occurred.",
   "status": 400,
   "errors": {
-    "Email": ["The Email field is not a valid e-mail address."],
-    "Password": ["The field Password must be a string or array type with a minimum length of '8'."]
-  },
-  "traceId": "00-..."
-}
-```
-
-- The frontend shows `errors` (joined) first, then `detail`, then `title`. `type` and `traceId` can be anything.
-- Validation errors (`400`) have `errors`: `field -> string[]`. Other errors have `title` and optionally `detail`.
-- Auth body validation keys are **PascalCase** (`Email`, `Password`). Games query validation keys are **camelCase** (`genres`, `ordering`).
-
-### Status codes
-
-| Code | Meaning |
-|---|---|
-| 200 / 201 / 204 | OK with body / account created / OK no body |
-| 400 | Validation failed |
-| 401 | Not logged in, or bad credentials |
-| 404 | Game not found, or unknown `/api/*` route |
-| 409 | Favorites limit reached |
-| 500 | `{ "title": "An unexpected error occurred.", "status": 500 }` |
-| 503 | Game data provider (RAWG) unavailable or not configured |
-
----
-
-## 2. Endpoint summary
-
-| Method | Path | Auth | Purpose |
-|---|---|:-:|---|
-| GET | `/api/auth/me` | Yes | Current user (session check) |
-| POST | `/api/auth/register` | No | Create account and sign in |
-| POST | `/api/auth/login` | No | Sign in |
-| POST | `/api/auth/logout` | No | Sign out |
-| DELETE | `/api/auth/delete-account` | Yes | Delete the current account |
-| GET | `/api/games` | Yes | Search, filter, sort and page games |
-| GET | `/api/games/filters` | Yes | Options for filter dropdowns |
-| GET | `/api/games/companies` | Yes | Developer/publisher autocomplete |
-| GET | `/api/games/featured` | Yes | Up to 10 randomly selected popular games |
-| GET | `/api/games/{id}` | Yes | One game's details |
-| GET | `/api/prices/{steamAppId}` | Yes | Price comparison across platforms |
-| GET | `/api/favorites` | Yes | Current user's favorites, paged |
-| GET | `/api/favorites/ids` | Yes | Favorited game ids only |
-| PUT | `/api/favorites/{igdbId}` | Yes | Add a favorite |
-| DELETE | `/api/favorites/{igdbId}` | Yes | Remove a favorite |
-| GET | `/health` | No | Text `Healthy` |
-
-Any other `/api/*` path returns an empty `404`. Non-`/api` paths without a file extension return Angular's `index.html`.
-
----
-
-## 3. Auth
-
-### Type `User`
-
-```json
-{ "id": "7c1d2f0e-6b1a-4a39-9f1e-2c3f6a5b8d10", "email": "ann@example.com", "displayName": "Ann" }
-```
-
-`displayName` may be `null`. `id` is a GUID string.
-
-### `GET /api/auth/me`
-
-- **200:** `User`
-- **401:** no or invalid cookie, or the user no longer exists (empty body)
-
-### `POST /api/auth/register`
-
-```json
-{ "email": "ann@example.com", "password": "Passw0rd!", "displayName": "Ann", "acceptedPrivacyPolicy": true }
-```
-
-| Field | Rules |
-|---|---|
-| `email` | required, valid email |
-| `password` | required, min 8, plus the Identity rules below |
-| `displayName` | optional |
-| `acceptedPrivacyPolicy` | must be `true`; missing, `null`, or `false` is rejected |
-
-Identity rules: one digit, one lowercase, one uppercase, one non-alphanumeric character.
-
-On successful registration, the server records the consent time in UTC. Existing accounts are not prompted again.
-
-- **201:** `User`, header `Location: /api/auth/me`, `Set-Cookie: Lune_auth=...`
-- **400:** `errors` keyed by field name for basic validation, or by Identity error code for rule failures. Email is also the username, so a duplicate yields both codes:
-
-```json
-{
-  "title": "One or more validation errors occurred.",
-  "status": 400,
-  "errors": {
-    "DuplicateUserName": ["Username 'ann@example.com' is already taken."],
-    "DuplicateEmail": ["Email 'ann@example.com' is already taken."]
+    "ordering": ["ordering is not one of the supported sort orders."]
   }
 }
 ```
 
-Other codes: `PasswordTooShort`, `PasswordRequiresDigit`, `PasswordRequiresLower`, `PasswordRequiresUpper`, `PasswordRequiresNonAlphanumeric`.
+- **Validation errors (`400`)** have an `errors` object mapping each field or parameter to its messages. Auth request fields are PascalCase (`Email`, `Password`, `DisplayName`, `AcceptedPrivacyPolicy`); game query parameters are camelCase (`genres`, `metacriticMin`).
+- **Other errors** have a `title` and usually a `detail`.
 
-### `POST /api/auth/login`
-
-```json
-{ "email": "ann@example.com", "password": "Passw0rd!" }
-```
-
-Both required, email must be valid (else **400** with `errors.Email` / `errors.Password`).
-
-- **200:** `User` plus `Set-Cookie`
-- **401:** wrong password, unknown email or locked account, always the same body:
-
-```json
-{ "title": "Invalid email or password.", "status": 401 }
-```
-
-Real lockout: 5 wrong passwords lock the account for 5 minutes. Optional to mock.
-
-### `POST /api/auth/logout`
-
-Angular sends `{}`. No auth required.
-
-- **204:** no body, cookie deleted
-
-### `DELETE /api/auth/delete-account`
-
-Requires authentication. The account identified by the auth cookie is deleted; no user ID is accepted from the request.
-
-- **204:** account deleted, no body, cookie deleted
-- **401:** no valid cookie, or the account no longer exists
-- **400:** Identity rejected the deletion; `errors` contains the Identity error codes and descriptions
+| Code                  | Meaning                                                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `200` / `201` / `204` | OK with a body / created / OK without a body                                                                     |
+| `400`                 | Validation failed                                                                                                |
+| `401`                 | Not signed in, or wrong email or password                                                                        |
+| `404`                 | Game not found, or no price data for the game                                                                    |
+| `409`                 | Favorites limit reached                                                                                          |
+| `503`                 | An outside provider (IGDB, Steam or GG.deals) didn't respond, or isn't configured. Retrying later usually works. |
 
 ---
 
-## 4. Games
+## 2. Endpoints
 
-### Types
+| Method | Path                       | Sign-in | Purpose                                          |
+| ------ | -------------------------- | :-----: | ------------------------------------------------ |
+| GET    | `/api/games`               |         | Search, filter, sort and page games              |
+| GET    | `/api/games/{id}`          |         | One game's full details, with related games      |
+| GET    | `/api/games/filters`       |         | Genre, platform and sort options for the filters |
+| GET    | `/api/games/companies`     |         | Developer or publisher search, for autocomplete  |
+| GET    | `/api/games/featured`      |         | 10 random games from the 50 most-rated           |
+| GET    | `/api/prices/{id}`         |         | Steam and GG.deals prices for a game             |
+| POST   | `/api/auth/register`       |         | Create an account and sign in                    |
+| POST   | `/api/auth/login`          |         | Sign in                                          |
+| POST   | `/api/auth/logout`         |         | Sign out                                         |
+| GET    | `/api/auth/me`             |   Yes   | The signed-in user                               |
+| PUT    | `/api/auth/profile`        |   Yes   | Change the display name                          |
+| DELETE | `/api/auth/delete-account` |   Yes   | Delete the account and all its data              |
+| GET    | `/api/favorites`           |   Yes   | The user's favorites, paged, newest first        |
+| GET    | `/api/favorites/ids`       |   Yes   | IDs of all the user's favorites                  |
+| PUT    | `/api/favorites/{id}`      |   Yes   | Add a favorite                                   |
+| DELETE | `/api/favorites/{id}`      |   Yes   | Remove a favorite                                |
+| GET    | `/health`                  |         | Liveness: is the process running?                |
+| GET    | `/health/ready`            |         | Readiness: can the API reach its database?       |
 
-```ts
-interface GameSummary {
-  id: number;                 // game ID from the configured provider
-  name: string;
-  released: string | null;    // "2013-09-17"
-  backgroundImage: string | null;
-  rating: number;             // 0-5
-  metacritic: number | null;  // 0-100
-  genres: string[];           // names
-  platforms: string[];        // names
-}
+---
 
-interface GameDetails extends GameSummary {
-  description: string | null; // plain text
-  website: string | null;
-  developers: string[];
-  publishers: string[];
-}
+## 3. Games
 
-interface PagedResult<T> {
-  items: T[];
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;         // ceil(totalCount / pageSize)
-}
+Game data comes from [IGDB](https://www.igdb.com/). Two shapes are returned:
 
-interface FilterOption { value: string; name: string; }
-interface CompanyOption { slug: string; name: string; gamesCount: number; }
-```
+- **`GameSummary`** (search results, favorites, related games): `id`, `name`, `released`, `backgroundImage`, `rating`, `metacritic`, `genres`, `platforms`.
+- **`GameDetails`** (one game, featured games): everything in the summary, plus `cover`, `description`, `storyLine`, `website`, `externalGames` (the game's IDs on other stores), `developers`, `publishers`, `screenshots`, `artworks`, `videos` (all as ready-to-use URLs) and `relatedGames` (a paged list of summaries).
+
+`genres`, `platforms`, `developers` and `publishers` are lists of filter options (`value` and `name`).
 
 ### `GET /api/games`
 
-Searches the game catalog. All query parameters are optional.
+All parameters are optional.
 
-| Param | Type | Default | Rules |
-|---|---|---|---|
-| `search` | string | none | Trimmed; blank values are ignored. |
-| `page` | int | `1` | Values below 1 are treated as 1. |
-| `pageSize` | int | `20` | Clamped to 1-40. |
-| `genres` | comma-separated slugs | none | Up to 10 distinct slugs. Values are trimmed and lowercased. Must match `^[a-z0-9][a-z0-9_-]{0,79}$`. |
-| `platforms` | comma-separated positive integers | none | Up to 10 distinct platform IDs. |
-| `developers` | comma-separated company slugs | none | Up to 10 distinct slugs; same format and normalization as `genres`. |
-| `publishers` | comma-separated company slugs | none | Up to 10 distinct slugs; same format and normalization as `genres`. |
-| `ordering` | string | none | One of the six values returned by `/api/games/filters`. Leading `-` means descending. |
-| `metacriticMin` | int | none | Inclusive minimum score from 0 to 100. With IGDB, this filters IGDB's aggregated critic rating, which is exposed as `metacritic`. |
-| `metacriticMax` | int | none | Inclusive maximum score from 0 to 100; must be greater than or equal to `metacriticMin`. With IGDB, this filters IGDB's aggregated critic rating. |
+| Param                            | Default   | Rules                                                                                                               |
+| -------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `search`                         | none      | Matches anywhere in the game name, case-insensitive. Blank is ignored.                                              |
+| `page`, `pageSize`               | `1`, `20` | See [Paging](#1-conventions).                                                                                       |
+| `genres`                         | none      | Comma-separated genre slugs, up to 10. Valid values from `/api/games/filters`.                                      |
+| `platforms`                      | none      | Comma-separated platform IDs, up to 10. Valid values from `/api/games/filters`.                                     |
+| `developers`, `publishers`       | none      | Comma-separated company slugs, up to 10 each. Valid values from `/api/games/companies`.                             |
+| `ordering`                       | see below | `-rating`, `-metacritic`, `-released`, `released`, `-added` (most rated) or `name`. A leading `-` means descending. |
+| `metacriticMin`, `metacriticMax` | none      | 0–100. The minimum can't be greater than the maximum.                                                               |
 
-#### How search and filters combine
+How they combine:
 
-- Multiple values for one list filter are alternatives (OR). For example, `genres=action,adventure` matches either genre.
-- Different filters are combined (AND). For example, `genres=action&platforms=6` requires both a matching genre and platform.
-- `search` is combined with the selected filters.
-- The IGDB provider excludes games without a known first release date or total rating from search results.
-- If no search term is provided, the IGDB provider excludes games with no rating count and defaults to most-rated first.
-- With a search term, the IGDB provider matches a substring of the game name and defaults to name order when `ordering` is omitted. This may return different matches than IGDB's full-text search.
-- `ordering` values mean: `-rating` highest rating first; `-metacritic` highest critic score first; `-released` newest release first; `released` oldest release first; `-added` most popular first; `name` A-Z.
+- Values within one filter are alternatives: `genres=shooter,indie` matches either.
+- Different filters must all match: genre **and** platform **and** ...
+- The search text combines with the filters.
+- **Default order:** most-rated first when browsing; name A–Z when searching. `ordering` overrides either.
+- Games without a release date or a rating are never included. When browsing without search text, games nobody has rated are left out too.
 
-Use `/api/games/filters` to discover available genre slugs and platform IDs, and `/api/games/companies` to discover developer and publisher slugs. The set of options depends on the configured provider.
+Responses: **200** with a paged list of `GameSummary` (an empty `items` list when nothing matches), **400** for invalid parameters, **503**.
 
-#### Example requests
+### `GET /api/games/{id}`
 
-These examples use the backend's HTTP development URL. When using Postman or a browser, replace `{{baseUrl}}` with `http://localhost:3001`.
+Full details for one game. `page` and `pageSize` (default 6) page through `relatedGames` only. `backgroundImage` is a screenshot chosen at random, so it can differ between calls.
 
-```http
+Responses: **200** `GameDetails`, **404** (empty body) for an unknown ID, **503**.
+
+### `GET /api/games/filters`
+
+Everything the search filters accept: `genres` (all IGDB genres; `value` is the slug), `platforms` (the platforms Lune supports; `value` is the numeric ID as a string) and `orderings` (the six sort orders). Cached on the server for 10 minutes.
+
+Responses: **200**, **503**.
+
+### `GET /api/games/companies`
+
+Developer or publisher search, for autocomplete. Both parameters are required:
+
+| Param    | Rules                                                           |
+| -------- | --------------------------------------------------------------- |
+| `kind`   | `developer` or `publisher`                                      |
+| `search` | 2–60 characters, matched anywhere in the name, case-insensitive |
+
+Returns up to 10 companies, those with the most games first: `{ "slug": "nintendo", "name": "Nintendo", "gamesCount": 1294 }`. Pass `slug` to the `developers` or `publishers` filter.
+
+Responses: **200**, **400**, **503**.
+
+### `GET /api/games/featured`
+
+10 games picked at random from IGDB's 50 most-rated, for the home page. The candidates are cached for 10 minutes; the selection changes on each call. Each item is a `GameDetails` with an empty `relatedGames` list, and `backgroundImage` is the game's first screenshot (or its cover).
+
+Responses: **200**, **404** (only if IGDB returns nothing), **503**.
+
+---
+
+## 4. Prices
+
+### `GET /api/prices/{id}`
+
+Prices for a game on each supported store, currently for the **Italian region** (EUR).
+
+1. The backend looks up the game's **Steam app ID** in IGDB (cached for 24 hours).
+2. It asks each store for prices using that ID (cached for 6 hours per store).
+
+``` json
+{
+  "gameId": 1020,
+  "steamAppId": 271590,
+  "platforms": [
+    { "platform": "Steam", "currentPrice": 29.99, "historicalLow": null, "averagePrice": null, "currency": "EUR", "url": "https://store.steampowered.com/app/271590" },
+    { "platform": "GG.deals", "currentPrice": 12.49, "historicalLow": 7.5, "averagePrice": null, "currency": "EUR", "url": "https://gg.deals/game/..." }
+  ]
+}
+```
+
+(Example values.)
+
+- **Steam** gives the current price only; `historicalLow` is always `null`.
+- **GG.deals** gives the current price and the historical low.
+- `averagePrice` isn't filled in yet.
+- If one store fails, the other is still returned.
+
+Responses:
+
+- **200**
+- **404** `No price data found.`: IGDB doesn't link the game to Steam.
+- **503** `Price data is currently unavailable.`: no store returned a price. This currently also happens for free games, which have no Steam price; see [FUTURE.md](./FUTURE.md#free-games-on-steam-return-503).
+
+---
+
+## 5. Auth
+
+User responses are `{ "id": "...", "email": "...", "displayName": "..." }`; `displayName` is `null` if not set.
+
+### `POST /api/auth/register`
+
+``` json
+{ "email": "ann@example.com", "password": "Passw0rd!", "displayName": "Ann", "acceptedPrivacyPolicy": true }
+```
+
+| Field                   | Rules                                                                                               |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| `email`                 | Required, a valid email, not already registered                                                     |
+| `password`              | Required: at least 8 characters, with an uppercase letter, a lowercase letter, a digit and a symbol |
+| `displayName`           | Optional. If given, it must be unique (case-insensitive). Blank is treated as no name.              |
+| `acceptedPrivacyPolicy` | Must be `true`. The consent time is recorded.                                                       |
+
+Responses: **201** with the user, a `Location: /api/auth/me` header and the auth cookie (the user is signed in); **400** with `errors` keyed by `Email`, `Password`, `DisplayName` or `AcceptedPrivacyPolicy`.
+
+### `POST /api/auth/login`
+
+``` json
+{ "email": "ann@example.com", "password": "Passw0rd!" }
+```
+
+Responses: **200** with the user and the auth cookie; **400** if a field is missing; **401** `Invalid email or password.`, the same for an unknown email and a wrong password, so the response doesn't reveal whether an account exists.
+
+### `POST /api/auth/logout`
+
+Clears the auth cookie. No body, no sign-in needed. Always **204**.
+
+### `GET /api/auth/me`
+
+The signed-in user. Use it to check whether the session is still valid, for example on page load.
+
+Responses: **200**; **401** if not signed in, the session expired, or the account no longer exists.
+
+### `PUT /api/auth/profile`
+
+``` json
+{ "displayName": "Ann" }
+```
+
+Changes the display name. It's trimmed, must be 2–20 characters, and must not be used by another account (case-insensitive).
+
+Responses: **200** with the updated user, **400**, **401**.
+
+### `DELETE /api/auth/delete-account`
+
+Permanently deletes the signed-in user's account and all their data (including favorites), then clears the cookie. This can't be undone.
+
+Responses: **204**, **401**, **400** if the delete is refused.
+
+---
+
+## 6. Favorites
+
+All favorites endpoints require sign-in. Each favorite keeps a copy of the game's summary from when it was saved; see [DATABASE.md](./DATABASE.md#schema-favorites).
+
+### `GET /api/favorites`
+
+The user's favorites, **newest first**, as a paged list of `GameSummary`. Served from the database only, so it works even when IGDB is unavailable.
+
+Responses: **200**, **401**.
+
+### `GET /api/favorites/ids`
+
+The IGDB IDs of all the user's favorites, as one array in no particular order, e.g. `[1020, 7346]`. Used to mark favorites in search results without loading full game data.
+
+Responses: **200**, **401**.
+
+### `PUT /api/favorites/{id}`
+
+Saves a game. No request body. Safe to repeat: saving a game that is already a favorite also returns 201.
+
+| Result                                                 | Status                             |
+| ------------------------------------------------------ | ---------------------------------- |
+| Saved, or already saved                                | **201**, no body                   |
+| IGDB has no game with this ID (or the ID is 0 or less) | **404**, no body                   |
+| The user already has 1,000 favorites                   | **409** `Favorites limit reached.` |
+| IGDB unavailable                                       | **503**                            |
+| Not signed in                                          | **401**                            |
+
+### `DELETE /api/favorites/{id}`
+
+Removes a game. Safe to repeat: returns **204** whether or not the game was saved. **401** if not signed in.
+
+---
+
+## 7. Health
+
+| Endpoint            | Returns                                                                                                                                                                                        |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /health`       | `ok` (plain text) while the process is running. Doesn't check anything else.                                                                                                                   |
+| `GET /health/ready` | `200 {"status":"Healthy","checks":{"database":"Healthy"}}` when the database is reachable; `503` with the failing check otherwise. Docker Compose waits for this before starting the frontend. |
+
+---
+
+## 8. Example requests
+
+Paste into any HTTP client that supports `.http` files (VS Code REST Client, JetBrains), or replace `{{baseUrl}}` with `http://localhost:3001` in a browser or Postman.
+
+``` http
 @baseUrl = http://localhost:3001
 
-### Default listing (page 1, 20 results)
+### Default listing (most-rated first, page 1, 20 results)
 GET {{baseUrl}}/api/games
 
 ### Search by text
@@ -259,298 +325,28 @@ GET {{baseUrl}}/api/games?search=zelda
 ### Search with paging
 GET {{baseUrl}}/api/games?search=mario&page=2&pageSize=10
 
-### Match either genre, and require one of the selected platforms
-GET {{baseUrl}}/api/games?genres=action,adventure&platforms=6,167
+### Match either genre, on PC or PlayStation 5
+GET {{baseUrl}}/api/games?genres=shooter,adventure&platforms=6,167
 
-### Sort by rating and restrict the score range
-GET {{baseUrl}}/api/games?ordering=-rating&metacriticMin=70&metacriticMax=95
+### Sort by critic score within a score range
+GET {{baseUrl}}/api/games?ordering=-metacritic&metacriticMin=70&metacriticMax=95
 
-### Search, filter, sort, and page results together
-GET {{baseUrl}}/api/games?search=zelda&genres=action,adventure&platforms=130&ordering=-released&metacriticMin=80&page=1&pageSize=20
+### Search, filter, sort and page together
+GET {{baseUrl}}/api/games?search=zelda&genres=adventure&platforms=130&ordering=-released&page=1&pageSize=20
 
-### Get the available genre, platform, and ordering options
+### Filter options
 GET {{baseUrl}}/api/games/filters
 
-### Filter by developer (use a slug returned by the companies endpoint)
+### Find a developer, then filter by its slug
+GET {{baseUrl}}/api/games/companies?kind=developer&search=Nintendo
 GET {{baseUrl}}/api/games?developers=nintendo
 
-### Filter by publisher
-GET {{baseUrl}}/api/games?publishers=nintendo
+### One game, and its prices
+GET {{baseUrl}}/api/games/1020
+GET {{baseUrl}}/api/prices/1020
 
-### A-Z ordering
-GET {{baseUrl}}/api/games?ordering=name
-
-### Check validation: unsupported ordering
+### Validation errors (400)
 GET {{baseUrl}}/api/games?ordering=popular
-
-### Check validation: invalid platform ID
 GET {{baseUrl}}/api/games?platforms=pc
-
-### Check validation: incompatible score bounds
 GET {{baseUrl}}/api/games?metacriticMin=90&metacriticMax=50
 ```
-
-- **200:** `PagedResult<GameSummary>`
-
-```json
-{
-  "items": [
-    {
-      "id": 22511,
-      "name": "The Legend of Zelda: Breath of the Wild",
-      "released": "2017-03-03",
-      "backgroundImage": "https://media.rawg.io/media/games/cc1/cc196a5ad763955d6532cdba236f730c.jpg",
-      "rating": 4.38,
-      "metacritic": 97,
-      "genres": ["Action", "Adventure"],
-      "platforms": ["Nintendo Switch", "Wii U"]
-    }
-  ],
-  "page": 1,
-  "pageSize": 20,
-  "totalCount": 1,
-  "totalPages": 1
-}
-```
-
-No matches return **200** with an empty `items` array and `totalCount: 0`. `totalPages` is calculated from the result count and page size.
-
-- **400:** validation problem with an `errors` object keyed by parameter name. Invalid slugs, more than 10 distinct values, invalid platform IDs, unsupported orderings, scores outside 0-100, or a minimum greater than the maximum are rejected.
-- **503:** see below.
-
-### `GET /api/games/filters`
-
-Returns the filter options available from the configured provider and the supported ordering choices.
-
-- **200:**
-
-```json
-{
-  "genres": [
-    { "value": "action", "name": "Action" },
-    { "value": "indie", "name": "Indie" },
-    { "value": "adventure", "name": "Adventure" },
-    { "value": "role-playing-games-rpg", "name": "RPG" }
-  ],
-  "platforms": [
-    { "value": "1", "name": "PC" },
-    { "value": "2", "name": "PlayStation" },
-    { "value": "3", "name": "Xbox" },
-    { "value": "7", "name": "Nintendo" }
-  ],
-  "orderings": [
-    { "value": "-rating", "name": "Rating (high to low)" },
-    { "value": "-metacritic", "name": "Metacritic (high to low)" },
-    { "value": "-released", "name": "Release date (newest)" },
-    { "value": "released", "name": "Release date (oldest)" },
-    { "value": "-added", "name": "Most popular" },
-    { "value": "name", "name": "Name (A-Z)" }
-  ]
-}
-```
-
-- Genre `value` is a slug. Platform `value` is a numeric ID **as a string**. Pass these values as `genres` / `platforms` on `GET /api/games`.
-- `orderings` contains the six supported values: `-rating`, `-metacritic`, `-released`, `released`, `-added`, and `name`.
-- **503** if the provider is unavailable.
-
-### `GET /api/games/companies`
-
-| Param | Required | Rules |
-|---|:-:|---|
-| `kind` | Yes | `developer` or `publisher` (case-insensitive) |
-| `search` | Yes | 2-60 chars after trimming |
-
-- Example queries:
-```
-@baseUrl = http://localhost:3001
-
-### Search developers
-GET {{baseUrl}}/api/games/companies?kind=developer&search=Nintendo
-
-### Search publishers
-GET {{baseUrl}}/api/games/companies?kind=publisher&search=Nintendo
-
-### Use a returned developer slug in a game search
-GET {{baseUrl}}/api/games?developers=nintendo
-```
-
-- **200:** up to **10** `CompanyOption`:
-
-```json
-[
-  { "slug": "nintendo", "name": "Nintendo", "gamesCount": 1294 },
-  { "slug": "nintendo-epd", "name": "Nintendo EPD", "gamesCount": 45 }
-]
-```
-
-- **400:** `errors.kind` and/or `errors.search`
-- **503**
-
-Company slugs come from the configured provider. With IGDB, `gamesCount` is the number of games
-associated with the requested role (developed or published).
-
-### `GET /api/games/featured`
-
-- **200:** an array of up to 10 distinct `GameDetails` objects (each has the same shape as `GET /api/games/{id}`)
-- **404:** no eligible games are available
-- **503:** same as the other games routes
-
-The backend selects without replacement from up to 50 popular games (ordered by rating count in IGDB or rating in RAWG). If fewer than 10 are available, all available games are returned. The mock selects from its 50 most-added games.
-
-### `GET /api/games/{id}`
-
-`id` must be an integer.
-
-- **200:** `GameDetails`
-
-```json
-{
-  "id": 3498,
-  "name": "Grand Theft Auto V",
-  "released": "2013-09-17",
-  "backgroundImage": "https://media.rawg.io/media/games/456/456dea5e1c7e3cd07060c14e96612001.jpg",
-  "rating": 4.47,
-  "metacritic": 92,
-  "genres": ["Action", "Adventure"],
-  "platforms": ["PC", "PlayStation 5", "Xbox One"],
-  "description": "Rockstar Games went bigger, since their previous installment...",
-  "website": "http://www.rockstargames.com/V/",
-  "developers": ["Rockstar North"],
-  "publishers": ["Rockstar Games"]
-}
-```
-
-- **404:** unknown game (empty body)
-- **503**
-
-### Games 503 body
-
-```json
-{
-  "title": "Game data is currently unavailable.",
-  "status": 503,
-  "detail": "The RAWG API key is not configured (Rawg__ApiKey)."
-}
-```
-
----
-
-## 5. Prices
-
-Compares prices for a game across multiple platforms (Steam, GG.deals, etc.).
-
-### Types
-
-```ts
-interface PlatformPrice {
-  platform: string;           // e.g., "Steam", "GG.deals"
-  currentPrice: number | null;
-  historicalLow: number | null;
-  averagePrice: number | null;
-  currency: string | null;    // e.g., "USD", "EUR" for now set to it (italy)
-  url: string | null;         // platform-specific game page
-}
-
-interface GamePriceComparison {
-  gameId: number;
-  steamAppId: number;
-  platforms: PlatformPrice[];
-}
-```
-
-### `GET /api/prices/{gameId}`
-
-Returns price data for a game across available platforms. `gameId` must be a positive integer.
-
-- **200:** `GamePriceComparison`
-
-```json
-{
-  "gameId": 3498,
-  "steamAppId": 570,
-  "platforms": [
-    {
-      "platform": "Steam",
-      "currentPrice": 0.0,
-      "historicalLow": 0.0,
-      "averagePrice": null,
-      "currency": "USD",
-      "url": "https://store.steampowered.com/app/570"
-    },
-    {
-      "platform": "GG.deals",
-      "currentPrice": 5.99,
-      "historicalLow": 0.0,
-      "averagePrice": null,
-      "currency": "USD",
-      "url": "https://gg.deals/game/dota-2"
-    }
-  ]
-}
-```
-
-- **404:** Game not found (no Steam release or pricing data unavailable). Response body:
-
-```json
-{
-  "type": "https://tools.ietf.org/html/rfc9110#section-15.6.4",
-  "title": "No price data found.",
-  "status": 404,
-  "detail": "This game may not have a Steam release or pricing data is not available."
-}
-```
-
-- **503:** Price providers are unavailable. Response body:
-
-```json
-{
-  "title": "Price data is currently unavailable.",
-  "status": 503,
-  "detail": "Platform errors: GG.deals: [error details]"
-}
-```
-
----
-
-## 6. Favorites
-
-A per-user bookmark. The server stores a **snapshot** of the game summary (name, image, release date, rating, Metacritic, genres, platforms) when saved. All of it comes from the game catalog, never from the request. The user always comes from the cookie.
-
-```ts
-interface Favorite {
-  id: number;            // game id
-  name: string;
-  BackgroundImage: string | null;  // the game's backgroundImage
-  released: string | null;  // "2013-09-17"
-  rating: number;           // 0-5
-  metacritic: number | null; // 0-100
-  genres: string[];         // names
-  platforms: string[];      // names
-  addedAtUtc: string;       // "2026-10-28T12:04:41.123Z"
-}
-```
-
-### `GET /api/favorites`
-- **Query:** `page` (default `1`, values below 1 become 1), `pageSize` (default `20`, clamped to 1-40)
-- **200:** `PagedResult<Favorite>`, **newest first**. `items` is `[]` if none, or if `page` is past the last page. `totalCount` is all of the user's favorites (max 1000).
-- **401**
-
-### `GET /api/favorites/ids`
-- **200:** `number[]`, e.g. `[3498, 22511]`
-- **401**
-
-### `PUT /api/favorites/{rawgId}`
-
-Angular sends `{}`. **Idempotent.**
-
-| Result | Status | Body |
-|---|---|---|
-| Added or already a favorite | 204 | none |
-| `rawgId <= 0` or game doesn't exist | 404 | empty |
-| User already has 1000 | 409 | `{ "title": "Favorites limit reached.", "status": 409 }` |
-| Provider unavailable | 503 | games 503 body |
-| Not logged in | 401 | empty |
-
-### `DELETE /api/favorites/{rawgId}`
-- **204** always when logged in (idempotent)
-- **401**

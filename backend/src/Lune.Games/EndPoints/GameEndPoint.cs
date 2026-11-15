@@ -51,7 +51,7 @@ public static class GameEndPoint
                 "Everything the search filters accept, for building the filter UI. Each option has a `value` to send " +
                 "and a `name` to display. `genres` lists all Game Database genres(value = slug, for the `genres` parameter)." +
                 "`platforms` lists the platforms Lune supports (value = platform ID, for the `platforms` parameter). " +
-                "`orderings` lists the sort orders for the `ordering` parameter. Cached on the server for 12 hours.")
+                "`orderings` lists the sort orders for the `ordering` parameter. Cached on the server for 10 minutes.")
             .Produces<GameFilterOptions>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 

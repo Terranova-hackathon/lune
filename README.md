@@ -1,119 +1,167 @@
-# Terranova
+# LunaNova
 
-Lune: ASP.NET Core backend, SQL Server, Angular frontend.
+**Find your next game, compare its prices, and keep track of your favorites.**
 
-## Run with Docker
+LunaNova is an open-source game discovery web app. Anyone can search a catalog of thousands of games, filter it by genre, platform, developer, publisher and critic score, open a detailed page for each game, and compare its current price across stores. Signed-in users can save games to their favorites and manage their account.
 
-Requirements: Docker Engine and the Docker Compose plugin. Nothing else needs to be installed locally.
+It was built for the **Terranova Software "Gaming Explorer" challenge** (Challenge – Episode 3) with ASP.NET Core, Angular and SQL Server.
 
-To run only the frontend and mock API, use:
+> **Names used in this repository:** _LunaNova_ is the product name you see in the app. _Lune_ is the internal project name, used in the code (`Lune.Api`, `Lune.Games`, ...), the Docker project and the database. _Terranova_ (Terranova Software) is the client the challenge was set by.
 
-```bash
-docker compose up --build mock-api frontend
+<!-- Screenshot: home page with the featured games hero, search bar and filters (docs/images/home.png) -->
+
+## Contents
+
+1. [Highlights](#highlights)
+2. [Quick start](#quick-start)
+3. [Evaluating the project](#evaluating-the-project)
+4. [Tech stack](#tech-stack)
+5. [Documentation](#documentation)
+6. [Repository layout](#repository-layout)
+7. [Team](#team)
+
+---
+
+## Highlights
+
+**All mandatory features from the brief**, plus a set of bonus features. The full list, with where each one lives in the code, is in [docs/FEATURES.md](./docs/FEATURES.md).
+
+|                                 |                                                                                                                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Search**                      | Search by full or partial name, with suggestions as you type.                                                                                                                  |
+| **Advanced filters**            | Genre, platform, developer, publisher, critic score range, and six sort orders. Filters combine with the search.                                                               |
+| **Game pages**                  | Description, storyline, screenshot gallery, genres, platforms, developers, publishers, user rating and critic score, and related games.                                        |
+| **Price comparison** _(bonus)_  | Current price and historical low from Steam and GG.deals for each game, with links to the stores.                                                                              |
+| **Favorites**                   | Add and remove games from search results or a game page; a dedicated favorites page, stored in the database.                                                                   |
+| **Accounts** _(bonus)_          | Register, log in, change your display name and delete your account, with ASP.NET Core Identity and a JWT in an HttpOnly cookie. Guests can browse everything except favorites. |
+| **Dark / light mode** _(bonus)_ | Remembered between visits.                                                                                                                                                     |
+| **Every state handled**         | Loading indicators, error messages, and "no results" messages across the app. Responsive from phone to desktop.                                                                |
+| **Tested and documented API**   | An interactive API reference (Scalar) and an automated Bruno test suite of 79 requests, including error cases.                                                                 |
+
+<!-- Screenshot: game details page with gallery and price comparison (docs/images/game-details.png) -->
+
+<!-- Screenshot: search results with filters open, desktop and mobile side by side (docs/images/search.png) -->
+
+---
+
+## Quick start
+
+**You need:** [Docker Engine](https://docs.docker.com/engine/install/) with the Docker Compose plugin. Nothing else has to be installed to run the app.
+
+**1. Configure.** Copy the example environment file:
+
+``` bash
+cp .env.example .env
 ```
 
-| Service | URL | Notes |
-|---|---|---|
-| Frontend (Angular) | [http://localhost:8080](http://localhost:8080) | `/api` is proxied to the mock API |
-| Mock API (ASP.NET Core) | [http://localhost:4001](http://localhost:4001) | In-memory, resets on restart |
-| Backend (Asp.net Core) | [http://localhost:3001](http://localhost:3001) | Persistant data |
+Then fill in the values marked **REQUIRED** in `.env`:
 
-Press `Ctrl+C` to stop, or run `docker compose down`.
+| Variable                            | What it is                                                                                       | Where to get it                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `SA_PASSWORD`                       | Password for the local SQL Server: 8+ characters with upper and lower case, a digit and a symbol | Choose one                                                                                      |
+| `JWT_SECRET`                        | Secret for signing login tokens, at least 32 characters                                          | `openssl rand -base64 48`                                                                       |
+| `IGDB_CLIENT_ID`, `IGDB_API_SECRET` | Credentials for the game database (IGDB)                                                         | A free Twitch developer app: [IGDB getting started](https://api-docs.igdb.com/#getting-started) |
+| `GGDEALS_API_KEY`                   | _Strongly recommended._ Adds GG.deals prices; without it, prices come from Steam only            | [gg.deals/api](https://gg.deals/api/)                                                           |
 
-### Mock API
+**2. Start.**
 
-[mock-api/](./mock-api) implements everything in [docs/API.md](./docs/API.md) so the frontend can be built without the real backend. It is organised by module (`Auth`, `Games`, `Favorites`, `Shared`), and the game catalog lives in `mock-api/Data/games.json`.
-
-- Demo login: `demo@example.com` / `Passw0rd!` (or register a new account).
-- Add `?mock503=1` to a games request, or to `PUT /api/favorites/{id}`, to simulate the game provider being unavailable.
-- Data is held in memory, so favorites and new accounts reset when the container restarts.
-
-### Real backend
-
-The SQL Server and ASP.NET Core backend are regular Compose services; no profile is needed. The backend is available at [http://localhost:3001](http://localhost:3001). To run the full stack against it, copy `.env.example` to `.env` and set `SA_PASSWORD`, `JWT_SECRET` and `RAWG_API_KEY`. Then start Compose with the frontend pointed at the backend:
-
-```bash
-API_URL=http://backend:3001 docker compose up --build
+``` bash
+docker compose up --build
 ```
 
-The mock API remains available on port 4001. `API_URL` changes the frontend's `/api` proxy target; without it, the frontend continues to use the mock. The backend is a modular ASP.NET Core API in [backend/src/](./backend/src) (`Lune.Api`, `Auth`, `Games`, `Favorites`, `Shared`). Each module owns its own database schema and applies its EF migrations at startup. All routes live under `/api` (for example `/api/favorites`), and auth is an HttpOnly `Lune_auth` cookie, so log in first (`POST /api/auth/login`) before calling the favorites endpoints. See [docs/API.md](./docs/API.md) and [docs/DATABASE.md](./docs/DATABASE.md).
+The first start takes a few minutes. Docker downloads the images, installs packages, and the backend creates the database (migrations run automatically). The frontend starts once the backend reports it's ready.
 
-## Without Docker
+**3. Open.**
 
-Mock API (.NET 10 SDK):
+|                                                                      | URL                                                      |
+| -------------------------------------------------------------------- | -------------------------------------------------------- |
+| **The app**                                                          | [http://localhost:8080](http://localhost:8080)           |
+| API reference (Scalar)                                               | [http://localhost:3001/docs](http://localhost:3001/docs) |
+| Backend landing page: every route, with quick register/login buttons | [http://localhost:3001](http://localhost:3001)           |
 
-```bash
-cd mock-api && dotnet run --urls http://localhost:4001
+Stop with `Ctrl+C`, or `docker compose down`. Your data is kept between runs. For everyday development commands, running parts outside Docker, and troubleshooting, see the [contributor guide](./CONTRIBUTING.md).
+
+---
+
+## Evaluating the project
+
+A suggested 10-minute tour, with the app running:
+
+1. **Home page** ([localhost:8080](http://localhost:8080)): the featured games, then start typing in the search bar to see suggestions.
+2. **Search and filters:** open the filters, pick a genre and a platform, narrow the critic score, change the sort order. Try a search with no results, too.
+3. **A game page:** the gallery, the facts, the ratings and the price comparison. Scroll down to the related games.
+4. **Favorites as a guest:** click a heart. You're asked to log in first.
+5. **Register** a new account, then add a few favorites and open the **Favorites** page.
+6. **Account page:** change your display name, or delete the account.
+7. **Theme:** switch dark/light mode, then reload. The choice is remembered.
+8. **Resize the window**, or use your browser's device toolbar, to see the mobile layout.
+
+**For the API** (the brief's Postman requirement):
+
+- Browse and try every endpoint in the **Scalar** reference at [localhost:3001/docs](http://localhost:3001/docs).
+- Run the full **Bruno** test suite with one command. It needs Node.js and the Bruno CLI; setup is in [testing/README.md](./testing/README.md).
+
+``` bash
+cd testing/endpoint-testing/lune-reference-api && node run-tests.mjs
 ```
 
-Frontend (Node.js 22):
+It writes an HTML report to `reports/`.
 
-```bash
-cd frontend && npm install && npm start
-```
+---
 
-## Backend Dev Dependencies
+## Tech stack
 
-Backend development requires Microsoft's dotnet SDK
+| Layer                   | Technology                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| Backend                 | C# / ASP.NET Core 10 (minimal APIs), split into modules: Auth, Games, Favorites, Prices |
+| Frontend                | Angular 22, TypeScript, Bootstrap, RxJS                                                 |
+| Database                | SQL Server 2022, Entity Framework Core (one schema per module, migrations at startup)   |
+| Authentication          | ASP.NET Core Identity, JWT stored in an HttpOnly cookie                                 |
+| External data           | IGDB (game data), Steam and GG.deals (prices)                                           |
+| API docs and tests      | OpenAPI + Scalar, Bruno (OpenCollection format), Vitest for the frontend                |
+| Development environment | Docker Compose with hot reload for the backend and frontend                             |
 
-Install with:
-```
-sudo apt-get update && sudo apt-get install -y dotnet-sdk-10.0
-```
-Only one external package is used in this project (Scalar for API documentation and testing)
+Why these choices were made, and how the pieces fit together: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
-Install (in Lune.Api project directory) with:
+---
 
-```
-dotnet add package Scalar.AspNetCore
-```
+## Documentation
 
-## Frontend Dev Dependencies
+| Document                                                 | What's in it                                                                        |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [docs/FEATURES.md](./docs/FEATURES.md)                   | Every feature, mapped to the brief's requirements, plus the engineering behind them |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)           | System and module architecture, technology choices, extensibility                   |
+| [docs/API.md](./docs/API.md)                             | API overview: endpoints, authentication, conventions, error format                  |
+| [docs/DATABASE.md](./docs/DATABASE.md)                   | Database schemas, tables and design decisions                                       |
+| [docs/FUTURE.md](./docs/FUTURE.md)                       | Planned features and known limitations                                              |
+| [testing/README.md](./testing/README.md)                 | Exploring the API with Scalar, the Bruno test suite, frontend unit tests            |
+| [CONTRIBUTING.md](./CONTRIBUTING.md)                     | Developer guide: the Docker setup, everyday commands, editor setup, troubleshooting |
+| [backend/README.md](./backend/README.md)                 | Backend modules, configuration, migrations and conventions                          |
+| [frontend/README.md](./frontend/README.md)               | Frontend structure and scripts                                                      |
+| `docs/openapi.json`                                      | The generated OpenAPI description of the API                                        |
+| `docs/en.game_explorer.pdf`, `docs/it.game_explorer.pdf` | The original challenge brief (English, Italian)                                     |
 
-The Angular CLI requires a minimum Node.js version of v22.22.3 or v24.15.0 or v26.0.0.
+---
 
-Install with:
-```
-sudo apt install ng-common
-```
+## Repository layout
 
-NOTE: If your bash terminal stops working after installing ng-common follow this guid line [stackoverflow](https://stackoverflow.com/questions/76179315/terminal-not-working-after-installing-ng-common).
+| Path                                                | What it is                                                                                                                                   |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/`                                          | ASP.NET Core API: `Lune.Api` (host) and the `Lune.Auth`, `Lune.Games`, `Lune.Favorites`, `Lune.Prices` and `Lune.Shared` modules             |
+| `frontend/`                                         | Angular app                                                                                                                                  |
+| `docs/`                                             | Project documentation and the challenge brief                                                                                                |
+| `testing/`                                          | Bruno API test suite and testing guide                                                                                                       |
+| `mock-api/`                                         | An early in-memory mock of the API. Not maintained and not part of the build; see the [contributor guide](./CONTRIBUTING.md#project-layout). |
+| `docker-compose.yml`, `docker-compose.override.yml` | Shared and development Docker configuration                                                                                                  |
 
+---
 
-To run forntend tests after intalling ng-common and the right node versions:
-```
-cd frontend/
-npm test
-```
+## Team
 
-TODO: later we can add these test to CI/CD pipe line so we dont break anything. 
+| Name                 | Role                                |
+| -------------------- | ----------------------------------- |
+| Kelvin Lemayian      | Lead Frontend Developer             |
+| Minoka Kakizaki      | Lead Backend Developer              |
+| Francesca Frattaroli | Testing, Documentation & Deployment |
 
-## Testing
-
-For API testing, we use [Bruno](https://docs.usebruno.com/) which works with an opensource test collection format `opencollection.yaml`. These collections that can be imported to other testing suites such as Postman.
-
-The test collection can be found at `/testing/endpoint-testing/lune-api-testing`. This collection can be opened with Bruno deskop,
-or can be accessed from within the VSCode IDE using the Bruno Extension `id: bruno-api-client.bruno`
-
-The entire endpoint collection can be run from the Bruno collections sidebar.
-
-1. Click `...` next to collection name and select "Run"
-2. Specify the order of requests (note some might impact the outcome of others, ex. don't test 'logout' before accessing auth protected endpoints).
-3. Run the requests
-4. Explore the responses.
-
-![1. Select Run](docs/images/bruno_select_run.png)
-![3. Run Requests](docs/images/bruno_run_requests.png)
-
-### Updating tests for new endpoints
-
-To retrieve an up to date openapi.json, run the following command from project root while the project is running:
-`curl -s http://localhost:3001/openapi/v1.json -o docs/openapi.json`
-This will save a copy to the /docs directory.
-
-To pre-populate a reference Bruno collection based on the openapi.json:
-(Requires `node > 20` and `npm install-g usebruno/cli`)
-
-Run ```bru import openapi -s docs/openapi.json -o testing/endpoint-testing/lune-reference-api -n "Lune Reference API" --collection-format=opencollection```
-
-Now, you can copy over any new endpoints to the `lune-api-testing` collection and begin to build out new tests.
+<!-- Optional: links to GitHub profiles, the presentation video, a note on how AI tools were used (the brief asks teams to be able to explain this) -->

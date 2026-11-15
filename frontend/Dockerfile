@@ -1,9 +1,12 @@
-FROM node:22-alpine
+# Pinned Node version (the Angular CLI needs v22.22.3 or newer). Update on purpose (and commit).
+FROM node:22.23.5-alpine AS dev
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+
+# Install exactly the versions in package-lock.json.
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Source is bind-mounted in dev; this COPY is a fallback for production builds
 COPY . .
