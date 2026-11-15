@@ -1,5 +1,17 @@
-<section class="featured" aria-label="Featured games">
-	<ul class="featured__track" #track (scroll)="updateScrollState()">
+<section
+	class="featured"
+	aria-label="Featured games"
+	(mouseenter)="pauseOnHover()"
+	(mouseleave)="resumeAfterHover()"
+	(focusin)="pauseOnFocus()"
+	(focusout)="resumeAfterFocus($event)"
+>
+	<ul
+		class="featured__track"
+		#track
+		(scroll)="updateScrollState()"
+		(wheel)="onWheel($event)"
+	>
 		@for (game of games(); track game.id) {
 			<li class="featured__slide">
 				@if (game.backgroundImage) {
