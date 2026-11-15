@@ -12,7 +12,7 @@ public sealed record RegisterRequest(
     string Password,
     [property: Description("Optional public name. Must be unique if given; blank is treated as no name.")]
     string? DisplayName,
-    [property: Range(typeof(bool), "true", "true", ErrorMessage = "You must accept the privacy policy."), Description("Must be `true`.")]
+    [property: StringLength(20, MinimumLength = 2), Range(typeof(bool), "true", "true", ErrorMessage = "You must accept the privacy policy."), Description("Must be `true`.")]
     bool AcceptedPrivacyPolicy);
 
 public sealed record LoginRequest(
