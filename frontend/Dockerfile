@@ -3,6 +3,8 @@ FROM node:22.23.5-alpine AS dev
 
 WORKDIR /app
 
+
+# Install exactly the versions in package-lock.json.
 COPY package.json package-lock.json ./
 RUN npm ci
 

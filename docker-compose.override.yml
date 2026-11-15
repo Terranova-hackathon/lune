@@ -1,0 +1,58 @@
+# Development settings. Loaded automatically by `docker compose up` on top of
+# docker-compose.yml. Source code is bind-mounted, so saving a file hot-reloads it.
+
+services:
+    sqlserver:
+        # Reachable from database tools on this machine only (not from the network).
+        ports:
+            - '127.0.0.1:1433:1433'
+
+    backend:
+        build:
+            target: dev
+        ports:
+            - '3001:3001'
+        environment:
+            - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+        volumes:
+            - ./backend:/app
+            - nuget-cache:/root/.nuget/packages
+            # Container-only build output, so host and container builds never mix.
+            - /app/src/Lune.Api/bin
+            - /app/src/Lune.Api/obj
+            - /app/src/Lune.Auth/bin
+            - /app/src/Lune.Auth/obj
+            - /app/src/Lune.Games/bin
+            - /app/src/Lune.Games/obj
+            - /app/src/Lune.Favorites/bin
+            - /app/src/Lune.Favorites/obj
+            - /app/src/Lune.Prices/bin
+            - /app/src/Lune.Prices/obj
+            - /app/src/Lune.Shared/bin
+            - /app/src/Lune.Shared/obj
+        healthcheck:
+            # Healthy once the API answers and can reach the database.
+            test: ['CMD-SHELL', 'curl -fs http://localhost:3001/health/ready || exit 1']
+            interval: 5s
+            timeout: 3s
+            retries: 20
+            start_period: 30s
+
+    frontend:
+        build:
+            target: dev
+        ports:
+            - '8080:8080'
+        environment:
+            # The dev server proxies /api here (see frontend/proxy.conf.js).
+            - API_URL=${API_URL:-http://backend:3001}
+        volumes:
+            - ./frontend:/app
+            # Container-only node_modules. After package.json changes: docker compose up --build -V
+            - /app/node_modules
+        depends_on:
+            backend:
+                condition: service_healthy
+
+volumes:
+    nuget-cache:
