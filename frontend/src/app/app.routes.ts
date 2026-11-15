@@ -10,6 +10,7 @@ import { Privacy } from './pages/privacy/privacy';
 import { UserAccount } from './pages/user-account/user-account';
 
 import { About } from './pages/about/about';
+import { Compare } from './pages/compare/compare';
 
 export const routes: Routes = [
 	{
@@ -50,6 +51,10 @@ export const routes: Routes = [
 	{
 		path: 'about',
 		component: About
+	},
+	{
+		path: 'compare',
+		component: Compare
 	},
 	{
 		path: '**',

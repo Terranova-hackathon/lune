@@ -1,0 +1,195 @@
+<main class="compare-page container py-5">
+	<a class="compare-page__back" [routerLink]="gamesNavigation.gamesUrl()">← Back to games</a>
+	<header class="compare-page__header">
+		<h1>Compare games</h1>
+		<p>
+			Side by side prices and ratings. The best value in each row is
+			<span class="compare-legend compare-legend--best">green</span>
+			with a badge, and the others show in
+			<span class="compare-legend compare-legend--behind">red</span>
+			how far behind they are.
+		</p>
+	</header>
+
+	@if (failedIds().length) {
+		<div class="alert alert-warning d-flex align-items-center gap-3" role="alert">
+			<span>{{ failedIds().length }} game(s) could not be loaded.</span>
+			<button type="button" class="btn btn-outline-secondary btn-sm" (click)="retry()">
+				Retry
+			</button>
+		</div>
+	}
+
+	@if (loading() && !entries().length) {
+		<div class="text-center py-5" role="status">
+			<div class="spinner-border text-primary"></div>
+			<p class="mt-3">Loading comparison…</p>
+		</div>
+
+	} @else if (entries().length < 2) {
+		<section class="compare-page__empty">
+			<i class="bi bi-layout-three-columns" aria-hidden="true"></i>
+			<h2>Pick at least two games</h2>
+			<p>Tick <strong>Compare</strong> on game cards to add them here (up to 4).</p>
+			<a class="btn btn-primary" [routerLink]="gamesNavigation.gamesUrl()">
+				Browse games
+			</a>
+		</section>
+
+	} @else {
+		@if (mixedCurrencies()) {
+			<p class="compare-page__note">
+				<i class="bi bi-info-circle" aria-hidden="true"></i>
+				These games are priced in different currencies, so prices are not ranked.
+			</p>
+		}
+
+		<div class="compare-table__wrap" [class.is-loading]="loading()">
+			<table class="compare-table" [style.--cols]="columns().length">
+				<caption class="visually-hidden">Comparison of selected games</caption>
+				<thead>
+					<tr>
+						<td class="compare-table__corner"></td>
+						@for (col of columns(); track col.game.id) {
+							<th scope="col" class="compare-table__game">
+								<button
+									type="button"
+									class="compare-table__remove"
+									[attr.aria-label]="'Remove ' + col.game.name + ' from comparison'"
+									(click)="remove(col.game.id)"
+								>
+									<i class="bi bi-x-lg" aria-hidden="true"></i>
+								</button>
+								<a [routerLink]="['/games', col.game.id]">
+									<img
+										[src]="col.game.backgroundImage || 'images/placeholder.png'"
+										alt=""
+									/>
+									<span>{{ col.game.name }}</span>
+								</a>
+							</th>
+						}
+					</tr>
+				</thead>
+
+				<tbody>
+					<!-- PRICE -->
+					<tr class="compare-table__label-row">
+						<th [attr.colspan]="columns().length">Best price now</th>
+					</tr>
+
+					<tr class="compare-table__section">
+						<th scope="row">Best price now</th>
+						@for (col of columns(); track col.game.id) {
+							<td [class.is-best]="col.priceBest">
+								@if (col.best; as store) {
+									<span class="compare-value">
+										{{ store.currentPrice | currency:(store.currency || 'EUR') }}
+									</span>
+									@if (col.priceBest) {
+										<span class="compare-badge">Cheapest</span>
+									} @else if (col.priceDiff !== null) {
+										<span class="compare-diff">
+											+{{ col.priceDiff | currency:(store.currency || 'EUR') }}
+										</span>
+									}
+									<span class="compare-sub">
+										@if (validStoreUrl(store.url); as url) {
+											<a [href]="url" target="_blank" rel="noopener noreferrer">
+												{{ store.platform }}
+												<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+											</a>
+										} @else {
+											{{ store.platform }}
+										}
+									</span>
+								} @else {
+									<span class="compare-na">{{ col.priceError || 'N/A' }}</span>
+								}
+							</td>
+						}
+					</tr>
+
+					<tr class="compare-table__label-row">
+						<th [attr.colspan]="columns().length">Stores</th>
+					</tr>
+
+					<tr>
+						<th scope="row">Stores</th>
+						@for (col of columns(); track col.game.id) {
+							<td>
+								@if (col.prices?.platforms?.length) {
+									<ul class="compare-stores">
+										@for (store of col.prices!.platforms; track store.platform) {
+											<li>
+												<span class="compare-stores__name">{{ store.platform }}</span>
+												<span class="compare-stores__price">
+													@if (store.currentPrice !== null) {
+														{{ store.currentPrice | currency:(store.currency || 'EUR') }}
+													} @else {
+														N/A
+													}
+												</span>
+											</li>
+										}
+									</ul>
+								} @else {
+									<span class="compare-na">–</span>
+								}
+							</td>
+						}
+					</tr>
+
+					<!-- RATINGS -->
+					<tr class="compare-table__label-row">
+						<th [attr.colspan]="columns().length">User rating</th>
+					</tr>
+
+					<tr class="compare-table__section">
+						<th scope="row">User rating</th>
+						@for (col of columns(); track col.game.id) {
+							<td [class.is-best]="col.ratingBest">
+								@if (col.game.rating > 0) {
+									<span class="compare-value">
+										<i class="bi bi-star-fill compare-star" aria-hidden="true"></i>
+										{{ col.game.rating | number:'1.1-2' }}
+										<small>/ 5</small>
+									</span>
+									@if (col.ratingBest) {
+										<span class="compare-badge">Top rated</span>
+									} @else if (col.ratingDiff !== null) {
+										<span class="compare-diff">{{ col.ratingDiff | number:'1.1-2' }}</span>
+									}
+								} @else {
+									<span class="compare-na">Not rated</span>
+								}
+							</td>
+						}
+					</tr>
+
+					<tr class="compare-table__label-row">
+						<th [attr.colspan]="columns().length">Metacritic</th>
+					</tr>
+
+					<tr>
+						<th scope="row">Metacritic</th>
+						@for (col of columns(); track col.game.id) {
+							<td [class.is-best]="col.metaBest">
+								@if (col.game.metacritic !== null) {
+									<span class="compare-value">{{ col.game.metacritic }}</span>
+									@if (col.metaBest) {
+										<span class="compare-badge">Critics' pick</span>
+									} @else if (col.metaDiff !== null) {
+										<span class="compare-diff">{{ col.metaDiff }}</span>
+									}
+								} @else {
+									<span class="compare-na">N/A</span>
+								}
+							</td>
+						}
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	}
+</main>

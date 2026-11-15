@@ -1,4 +1,4 @@
-import { Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Component, computed, inject, OnInit, viewChild } from '@angular/core';
 import { GameCard } from '../../shared/game-card/game-card';
 import { GameModel } from '../../core/models/game.model';
 import { FormsModule } from '@angular/forms';
@@ -10,9 +10,12 @@ import { GamesFavorites } from './games-favorites';
 import { GamesQuery } from './games-query';
 import { GamesPagination } from './components/games-pagination/games-pagination';
 import { GamesLoginPrompt } from './components/games-login-prompt/games-login-prompt';
+import { CompareService, MAX_COMPARE } from '../../core/services/compare-service';
+import { Router } from '@angular/router';
+import { CompareTray } from '../../shared/compare-tray/compare-tray';
 
 @Component({
-  imports: [GameCard, FormsModule, GameFilters, GamesLoginPrompt, GamesPagination, ScrollControls],
+  imports: [CompareTray, GameCard, FormsModule, GameFilters, GamesLoginPrompt, GamesPagination, ScrollControls],
   providers: [GamesData, GamesFavorites, GamesQuery],
   selector: 'app-games',
   styleUrl: './games.scss',
@@ -25,6 +28,10 @@ export class Games implements OnInit {
   private readonly filtersPanel = viewChild(GameFilters);
   private readonly loginDialog = viewChild(GamesLoginPrompt);
   private readonly query = inject(GamesQuery);
+  private readonly compare = inject(CompareService);
+
+  readonly compareFull = this.compare.isFull;
+
 
   searchInput = '';
   readonly favoriteIds = this.favorites.favoriteIds;
@@ -95,5 +102,13 @@ export class Games implements OnInit {
 
   resetFilters(): void {
     this.query.resetFilters();
+  }
+
+  isGameSelected(gameId: number): boolean {
+    return this.compare.has(gameId);
+  }
+
+  toggleCompare(game: GameModel): void {
+    this.compare.toggle(game);
   }
 }
