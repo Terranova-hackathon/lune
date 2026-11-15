@@ -1,6 +1,6 @@
 # Lune database schema
 
-One SQL Server database (`Lune`). Each backend module owns its own **schema** and its own EF Core `DbContext` and migrations, which are applied automatically on startup. Each schema has its own `__EFMigrationsHistory` table.
+One SQL Server database (`Lune`).Follows [ASP.NET Core authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/?view=aspnetcore-10.0) standards. Each backend module owns its own **schema** and its own EF Core `DbContext` and migrations, which are applied automatically on startup. Each schema has its own `__EFMigrationsHistory` table.
 
 | Module | SQL schema | Purpose |
 |---|---|---|
@@ -15,6 +15,21 @@ One SQL Server database (`Lune`). Each backend module owns its own **schema** an
 **User identity and authorization** use ASP.NET Core Identity with standard tables (`AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`, `AspNetUserClaims`, etc.) plus three custom columns on `AspNetUsers` for additional metadata.
 
 The `Favorites` table references `AspNetUsers.Id` but **has no database foreign key**—modules are intentionally decoupled so each can move to its own database independently. The API layer enforces ownership by validating the user ID from the auth token.
+
+### Currently utilized tables
+- **`auth.AspNetUsers`** — actively used for user registration and login
+- **`auth.__EFMigrationsHistory`** — tracks EF Core migrations for the auth schema
+- **`favorites.Favorites`** — actively used to store and retrieve user favorites
+- **`favorites.__EFMigrationsHistory`** — tracks EF Core migrations for the favorites schema
+
+### Tables created but not yet utilized
+The following tables are created as part of the ASP.NET Core Identity framework but are **not actively saving or using data** as of now:
+- **`auth.AspNetRoles`**, **`auth.AspNetUserRoles`** — role-based authorization (reserved for future multi-tenant or admin features)
+- **`auth.AspNetUserClaims`**, **`auth.AspNetRoleClaims`** — fine-grained claims-based authorization (reserved for future access control)
+- **`auth.AspNetUserTokens`** — token storage for OAuth and refresh tokens (reserved for multi-provider auth scaling)
+- **`auth.AspNetUserLogins`** — external login credentials (reserved for GitHub OAuth or third-party auth integration)
+
+These tables exist to support planned features and to follow ASP.NET Identity conventions, avoiding schema changes down the road when authorization and multi-provider auth are needed.
 
 ## ER diagram
 
@@ -324,39 +339,6 @@ CREATE INDEX IX_Favorites_IgdbId ON favorites.Favorites(IgdbId);
 ```
 
 Complete migration scripts are in `backend/src/Lune.Auth/Data/Migrations/` and `backend/src/Lune.Favorites/Data/Migrations/`.
-
-## Mock data model (simplified for frontend/integration testing)
-
-A mock or test implementation only needs two collections and optionally roles/claims:
-
-```ts
-interface UserRow {
-  id: string;                  // GUID
-  email: string;               // unique, case-insensitive
-  displayName: string | null;
-  passwordHash: string;        // plain string is fine in a mock
-  createdAtUtc: string;        // ISO 8601
-  normalizedEmail: string;     // uppercase email
-  accessFailedCount: number;
-  lockoutEnd: string | null;   // ISO 8601 or null
-  roles?: string[];            // role names, optional
-  claims?: Record<string, string>; // claim type → value, optional
-}
-
-interface FavoriteRow {
-  userId: string;              // composite key part 1
-  igdbId: number;              // composite key part 2
-  name: string;                // snapshot
-  backgroundImage: string | null; // snapshot
-  released: string | null;     // snapshot, "yyyy-MM-dd" format
-  rating: number;              // snapshot
-  metacritic: number | null;   // snapshot
-  genres: string[];            // snapshot, JSON array
-  platforms: string[];         // snapshot, JSON array
-  createdAtUtc: string;        // ISO 8601, when favorited
-  snapshotUpdatedAtUtc: string; // ISO 8601, when snapshot was refreshed
-}
-```
 
 **Constraints to enforce:**
 
