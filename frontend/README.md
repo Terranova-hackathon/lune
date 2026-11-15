@@ -1,59 +1,48 @@
-# Frontend
+# LunaNova frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.5.
+The Angular 22 app for LunaNova (internal name: Lune), built with TypeScript, Bootstrap and RxJS. It talks to the backend through relative `/api/...` URLs.
 
-## Development server
+How the app is organized (pages, shared components, services, guards) is described in [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md#frontend-architecture).
 
-To start a local development server, run:
+## Running it
 
-```bash
-ng serve
+**With Docker (the usual way):** from the repository root, `docker compose up`. The app is served on [http://localhost:8080](http://localhost:8080), and saving a file reloads the browser. See the [contributor guide](../CONTRIBUTING.md).
+
+**On your machine** (needs Node.js v22.22.3 or newer):
+
+``` bash
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+The app is served on [http://localhost:4200](http://localhost:4200). `/api` requests are proxied to the backend at `http://localhost:3001` by default, which the backend container or a locally running backend provides. Set `API_URL` to send them elsewhere (see `proxy.conf.js`).
 
-## Code scaffolding
+## Scripts
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+| Command         | What it does                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `npm start`     | Development server with live reload (`ng serve`)                                                                                |
+| `npm test`      | Unit tests with [Vitest](https://vitest.dev/) (`ng test`). See [testing/README.md](../testing/README.md#6-frontend-unit-tests). |
+| `npm run build` | Production build into `dist/` (`ng build`)                                                                                      |
+| `npm run watch` | Development build that rebuilds on changes                                                                                      |
 
-```bash
-ng generate component component-name
+## Folder structure
+
+| Path                    | Contents                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/pages/`        | One folder per route (home, games, game details, favorites, login, register, account, privacy, about)                      |
+| `src/app/shared/`       | Reusable components (navbar, footer, game card, filters, company search, featured-game carousel, price comparison)         |
+| `src/app/core/`         | Services (one per backend area, plus theme and search state), the auth guard, and TypeScript models of the API's responses |
+| `src/app/app.routes.ts` | Routes; favorites and account are protected by `authGuard`                                                                 |
+| `proxy.conf.js`         | Dev-server proxy for `/api`                                                                                                |
+| `public/`               | Static assets: icons and images                                                                                            |
+
+## Generating code
+
+The project was created with [Angular CLI](https://angular.dev/tools/cli) 22.2.5. To scaffold a component:
+
+``` bash
+npx ng generate component shared/component-name
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+`npx ng generate --help` lists the other schematics (services, guards, pipes, ...).
