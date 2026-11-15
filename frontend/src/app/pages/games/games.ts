@@ -9,9 +9,10 @@ import { GamesData } from './games-data';
 import { GamesFavorites } from './games-favorites';
 import { GamesQuery } from './games-query';
 import { GamesPagination } from './components/games-pagination/games-pagination';
+import { GamesLoginPrompt } from './components/games-login-prompt/games-login-prompt';
 
 @Component({
-  imports: [GameCard, FormsModule, GameFilters, GamesPagination, ScrollControls],
+  imports: [GameCard, FormsModule, GameFilters, GamesLoginPrompt, GamesPagination, ScrollControls],
   providers: [GamesData, GamesFavorites, GamesQuery],
   selector: 'app-games',
   styleUrl: './games.scss',
@@ -22,10 +23,9 @@ export class Games implements OnInit {
   private readonly data = inject(GamesData);
   private readonly favorites = inject(GamesFavorites);
   private readonly filtersPanel = viewChild(GameFilters);
-  private readonly loginDialog = viewChild<ElementRef<HTMLDialogElement>>('loginDialog');
+  private readonly loginDialog = viewChild(GamesLoginPrompt);
   private readonly query = inject(GamesQuery);
 
-  loginPrompt = signal<GameModel | null>(null);
   searchInput = '';
   readonly favoriteIds = this.favorites.favoriteIds;
   readonly isLoggedIn = this.favorites.isLoggedIn;
@@ -65,16 +65,11 @@ export class Games implements OnInit {
   }
 
   private openLoginPrompt(id: number): void {
-    const game = this.games().find(g => g.id === id) ?? null;
-    this.loginPrompt.set(game);
-    this.loginDialog()?.nativeElement.showModal();
+    this.loginDialog()?.open(id);
   }
 
-  goToLogin(): void {
-    const game = this.loginPrompt();
-    if (!game) return;
-
-    this.favorites.goToLogin(game.id);
+  goToLogin(id: number): void {
+    this.favorites.goToLogin(id);
   }
 
   retryGames(): void {
