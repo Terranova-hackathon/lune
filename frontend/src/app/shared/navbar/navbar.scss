@@ -1,5 +1,4 @@
 @use './navbar-account';
-@use './navbar-responsive';
 
 .navbar {
 	width: 100%;
@@ -79,5 +78,62 @@
   		  outline: 2px solid var(--color-primary);
   		  outline-offset: 3px;
   		}
+	}
+}
+
+@media (max-width: 576px) {
+	.navbar {
+		&__container {
+			flex-direction: column;
+			gap: 10px;
+			padding: 12px 16px;
+		}
+	
+		&__brand {
+			font-size: 1.2rem;
+		}
+
+		&__icon {
+			font-size: 1.4rem;
+		}
+
+		&__links {
+			gap: 12px;
+			a {
+				font-size: 0.9rem;
+			}
+		}
+
+		&__user {
+			gap: 6px;
+			padding: 5px 8px;
+			font-size: 0.9rem;
+		}
+
+		&__theme-toggle {
+			width: 36px;
+			height: 36px;
+			font-size: 1rem;
+		}
+
+		position: relative;
+
+		&__account {
+			position: static;
+		}
+
+		&__account-dropdown {
+			position: absolute;
+			top: 100%;
+			right: 16px;
+			left: 16px;
+			transform: none;
+
+			width: auto;
+			max-height: calc(100vh - 220px);
+			max-height: calc(100dvh - 220px);
+			overflow-y: auto;
+			box-sizing: border-box;
+		}
 	}
 }
