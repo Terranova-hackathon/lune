@@ -15,6 +15,14 @@ export class GameCard {
   isFavorite = input(false);
   favoriteBusy = input(false);
   favoriteToggled = output<number>();
+  isCompared = input(false);
+  compareDisabled = input(false);
+  compareToggled = output<GameModel>();
+
+  toggleCompare(): void {
+    this.compareToggled.emit(this.game());
+  }
+
   toggleFavorite(): void {
     this.favoriteToggled.emit(this.game().id);
   }

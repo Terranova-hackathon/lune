@@ -59,5 +59,18 @@
 				<span>...</span>
 			}
 		</div>
+		<label class="game-card__compare" [class.is-disabled]="compareDisabled()"
+			[attr.title]="compareDisabled() ? 'You can compare up to 4 games' : null">
+			<input
+			type="checkbox"
+			[checked]="isCompared()"
+			[disabled]="compareDisabled()"
+			[attr.aria-label]="isCompared()
+				? 'Remove ' + game().name + ' from comparison'
+				: 'Add ' + game().name + ' to comparison'"
+			(change)="toggleCompare()"
+			/>
+			<span>Compare</span>
+		</label>
 	</div>
 </article>

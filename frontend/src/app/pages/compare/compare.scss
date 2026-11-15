@@ -1,0 +1,372 @@
+:host {
+	--compare-best: #22c55e;
+	--compare-best-text: #4ade80;
+	--compare-behind: #f87171;
+
+	display: block;
+	min-width: 0;
+}
+
+:host-context([data-bs-theme='light']) {
+	--compare-best: #16a34a;
+	--compare-best-text: #15803d;
+	--compare-behind: #dc2626;
+}
+
+.compare-page {
+	color: var(--color-text);
+
+	&__back {
+		display: inline-flex;
+		margin-bottom: 24px;
+		color: var(--color-primary);
+		font-weight: 600;
+		text-decoration: none;
+
+		&:hover {
+			color: var(--color-primary-hover);
+			text-decoration: underline;
+		}
+	}
+
+	&__header {
+		margin-bottom: 24px;
+
+		h1 {
+			font-size: clamp(1.8rem, 4vw, 2.8rem);
+			font-weight: 800;
+		}
+
+		p {
+			max-width: 640px;
+			color: var(--color-muted);
+		}
+	}
+
+	&__note {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: var(--color-muted);
+		font-size: 0.9rem;
+	}
+
+	&__empty {
+		max-width: 480px;
+		margin: 40px auto;
+		padding: 40px 24px;
+		border: 1px dashed var(--color-border);
+		border-radius: 16px;
+		background: var(--color-surface);
+		text-align: center;
+
+		> i {
+			font-size: 2.5rem;
+			color: var(--color-primary);
+		}
+
+		h2 {
+			margin: 12px 0 8px;
+			font-size: 1.3rem;
+			font-weight: 700;
+		}
+
+		p {
+			color: var(--color-muted);
+		}
+
+		.btn-primary {
+			background: var(--color-button-bg);
+			border-color: var(--color-button-bg);
+
+			&:hover {
+				background: var(--color-button-hover);
+				border-color: var(--color-button-hover);
+			}
+		}
+	}
+}
+
+.compare-legend {
+	font-weight: 600;
+
+	&--best {
+		color: var(--compare-best-text);
+	}
+
+	&--behind {
+		color: var(--compare-behind);
+	}
+}
+
+
+// TABLE
+.compare-table__wrap {
+	overflow-x: auto;
+	border: 1px solid var(--color-border);
+	border-radius: 16px;
+	background: var(--color-surface);
+	transition: opacity 0.2s ease;
+
+	&.is-loading {
+		opacity: 0.6;
+	}
+}
+
+.compare-table {
+	width: 100%;
+	min-width: calc(150px + var(--cols, 2) * 180px);
+	border-collapse: separate;
+	border-spacing: 0;
+	table-layout: fixed;
+
+	th,
+	td {
+		padding: 14px 16px;
+		border-bottom: 1px solid var(--color-border);
+		text-align: left;
+		vertical-align: top;
+		overflow-wrap: anywhere;
+	}
+	td {
+		text-align: center;
+	}
+
+	tbody tr:last-child > * {
+		border-bottom: none;
+	}
+
+	// faint divider between columns
+	tr > * + * {
+		border-left: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+	}
+
+	// row labels stay visible while scrolling sideways on phones
+	tbody th,
+	&__corner {
+		position: sticky;
+		left: 0;
+		z-index: 1;
+		width: 150px;
+		background: var(--color-surface);
+		color: var(--color-muted);
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
+	thead tr > * {
+		border-top: none;
+	}
+
+	&__game {
+		position: relative;
+
+		a {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			color: var(--color-text);
+			font-weight: 700;
+			text-decoration: none;
+
+			&:hover span {
+				color: var(--color-primary);
+			}
+		}
+
+		img {
+			width: 100%;
+			aspect-ratio: 16 / 9;
+			object-fit: cover;
+			border-radius: 10px;
+			background: var(--color-surface-alt);
+		}
+	}
+
+	&__remove {
+		position: absolute;
+		top: 20px;
+		right: 22px;
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		border: none;
+		border-radius: 50%;
+		background: rgb(0 0 0 / 60%);
+		color: #fff;
+		font-size: 0.8rem;
+		cursor: pointer;
+
+		&:hover {
+			background: var(--color-heart);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-primary);
+			outline-offset: 2px;
+		}
+	}
+
+	td.is-best {
+		.compare-value {
+			color: var(--compare-best-text);
+		}
+	}
+
+		&__label-row {
+		display: none;
+	}
+
+}
+
+// CELL CONTENT
+.compare-value {
+	display: block;
+	font-size: 1.15rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+
+	small {
+		color: var(--color-muted);
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+}
+
+.compare-star {
+	color: var(--color-rating);
+	font-size: 0.9rem;
+}
+
+.compare-badge {
+	display: inline-block;
+	margin-top: 6px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: var(--compare-best);
+	color: #fff;
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.compare-diff {
+	display: inline-block;
+	margin-top: 4px;
+	color: var(--compare-behind);
+	font-size: 0.85rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.compare-sub {
+	display: block;
+	margin-top: 6px;
+	color: var(--color-muted);
+	font-size: 0.8rem;
+
+	a {
+		color: var(--color-primary);
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+
+	i {
+		font-size: 0.65rem;
+	}
+}
+
+.compare-na {
+	color: var(--color-muted);
+	font-size: 0.9rem;
+}
+
+.compare-stores {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 0.8rem;
+
+	li + li {
+		margin-top: 4px;
+	}
+
+	&__name {
+		color: var(--color-muted);
+
+		&::after {
+			content: ' · ';
+		}
+	}
+
+	&__price {
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+}
+
+@media (max-width: 576px) {
+	.compare-table {
+		min-width: calc(var(--cols, 2) * 140px);
+
+		th,
+		td {
+			padding: 10px 8px;
+		}
+
+		// hide the left label column…
+		&__corner,
+		tbody tr:not(.compare-table__label-row) > th {
+			display: none;
+		}
+
+		// …so the first game no longer needs a divider on its left
+		tr > :nth-child(2) {
+			border-left: none;
+		}
+
+		// …and show the full-width label rows instead
+		&__label-row {
+			display: table-row;
+
+			th {
+				position: static;
+				width: auto;
+				padding: 8px 10px;
+				border-bottom: none;
+				background: var(--color-surface-alt);
+				color: var(--color-muted);
+				font-size: 0.7rem;
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
+			}
+		}
+
+		&__game a {
+			gap: 6px;
+			font-size: 0.85rem;
+		}
+
+		&__remove {
+			top: 14px;
+			right: 12px;
+			width: 24px;
+			height: 24px;
+			font-size: 0.7rem;
+		}
+	}
+
+	.compare-value {
+		font-size: 1rem;
+	}
+
+	.compare-badge {
+		font-size: 0.6rem;
+	}
+}

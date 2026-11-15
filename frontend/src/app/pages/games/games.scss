@@ -46,3 +46,128 @@
     }
   }
 }
+
+.games-page {
+  // room so the fixed compare tray never covers the pagination
+  &:has(.compare-tray) {
+    padding-bottom: 120px !important;
+  }
+}
+
+// COMPARE TRAY
+.compare-tray {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 90;
+  transform: translateX(-50%);
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(960px, calc(100% - 32px));
+  padding: 10px 12px;
+
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+  color: var(--color-text);
+
+  &__list {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    max-width: 200px;
+    padding: 4px 4px 4px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface-alt);
+
+    img {
+      width: 40px;
+      height: 28px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    span {
+      min-width: 0;
+      overflow: hidden;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    button {
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--color-muted);
+      cursor: pointer;
+
+      &:hover {
+        color: var(--color-heart);
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+
+    .btn-primary {
+      background: var(--color-button-bg);
+      border-color: var(--color-button-bg);
+
+      &:hover:not(:disabled) {
+        background: var(--color-button-hover);
+        border-color: var(--color-button-hover);
+      }
+    }
+  }
+
+  &__count {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .compare-tray {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+
+    &__actions {
+      justify-content: flex-end;
+    }
+
+    &__count {
+      margin-right: auto;
+    }
+  }
+}
