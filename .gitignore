@@ -11,3 +11,7 @@ bin/
 obj/
 .angular
 .vscode/settings.json
+
+#testing
+venv/
+reports/
