@@ -10,9 +10,9 @@ public sealed record RegisterRequest(
     string Email,
     [property: Required, MinLength(8), Description("At least 8 characters, with an uppercase letter, a lowercase letter, a digit and a symbol.")]
     string Password,
-    [property: Description("Optional public name. Must be unique if given; blank is treated as no name.")]
+    [property: Description("Optional public name. Must be unique if given; blank is treated as no name."), StringLength(20, MinimumLength = 2)]
     string? DisplayName,
-    [property: StringLength(20, MinimumLength = 2), Range(typeof(bool), "true", "true", ErrorMessage = "You must accept the privacy policy."), Description("Must be `true`.")]
+    [property: Range(typeof(bool), "true", "true", ErrorMessage = "You must accept the privacy policy."), Description("Must be `true`.")]
     bool AcceptedPrivacyPolicy);
 
 public sealed record LoginRequest(
