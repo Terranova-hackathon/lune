@@ -23,7 +23,7 @@ The backend follows a **modular architecture** where each feature owns its domai
 | **Deployment** | Docker Compose | Local dev parity with production, service networking, easy reset |
 | **Authentication** | JWT in HttpOnly cookies | CSRF-safe, works across subdomains, XSS-resistant storage |
 | **Game Data** | IGDB (via Twitch OAuth) | Comprehensive game metadata, regular updates, free tier available |
-| **Pricing Data** | GG.deals for current prices and historical lows; regional support (Italy) |
+| **Pricing Data** | GG.deals  and Steam for current prices and historical lows; regional support (Italy) | IGDB didnt have pricing data, so no way to do a price comparason Looking forword to implementing more API endpoints.
 
 ---
 
@@ -43,46 +43,20 @@ graph TB
     API -->|HTTP REST| WEB
     WEB -->|HTTP REST<br/>/api proxy| API
     
-    API -->|HTTPS| IGDB["IGDB API<br/>Game data"]
-    API -->|HTTPS| Steam["GG.deals API<br/>Store Prices"]
+    API -->|HTTPS| IGDB["IGDB API<br/>Game Metadata"]
+    API -->|HTTPS| Steam["Steam API<br/>Current Prices"]
+    API -->|HTTPS| GGDeals["GG.deals API<br/>Current Pricesy"]
     
     style SQL fill:#0078d4,color:#fff
     style API fill:#68217a,color:#fff
     style WEB fill:#d32f2f,color:#fff
+    style IGDB fill:#2e7d32,color:#fff
+    style Steam fill:#2e7d32,color:#fff
+    style GGDeals fill:#2e7d32,color:#fff
+    style WEB fill:#d32f2f,color:#fff
 ```
 
-### Services
 
-| Service | Image | Port | Environment |
-|---------|-------|------|-------------|
-| **sqlserver** | `mcr.microsoft.com/mssql/server:2022-latest` | 1433 | `SA_PASSWORD`, `ACCEPT_EULA` |
-| **backend** | Built from `backend/Dockerfile` | 3001 | API keys (RAWG, IGDB, GgDeals, Steam), JWT secret, DB connection |
-| **frontend** | Built from `frontend/Dockerfile` | 8080 | `API_URL` (defaults to `http://backend:3001` from `.env`) |
-
-### Networking
-
-All containers connect via the **`private-network`** bridge:
-
-- **Frontend → Backend**: Angular dev-server proxies `/api/*` requests to the backend service
-  - Dev proxy config: `frontend/proxy.conf.js`
-  - In-container URL: `http://backend:3001` (uses Docker service name)
-  - Example: Angular calls `/api/games` → proxied to `http://backend:3001/api/games`
-
-- **Backend → Database**: Direct TCP connection
-  - Connection string (from env): `Server=sqlserver,1433;Database=Lune;User Id=sa;Password=...`
-
-- **Backend → External APIs**: Outbound HTTPS over host network
-
-### Database Setup
-
-SQL Server starts with health checks (retries up to 12 times, 10s intervals). On first run:
-
-1. Backend container waits for SQL Server health check to pass
-2. Each module (Auth, Favorites) runs EF migrations at startup
-3. Schemas created: `auth`, `favorites`
-4. Data persists in the `sqlserver-data` volume
-
----
 
 ## Backend Module Architecture
 
@@ -121,8 +95,8 @@ graph LR
     
     subgraph "External Data Sources"
         IGDB["IGDB API<br/>(Game Database)<br/>Steam App ID source"]
-        GGDEALS["GG.deals API<br/>(Game Prices)<br/>ACTIVE"]
-        STEAM["Steam API<br/> Registered, not active"]
+        STEAM["Steam API<br/>(Current Price)<br/>⚡ ACTIVE"]
+        GGDEALS["GG.deals API<br/>(Price History)<br/>⚡ ACTIVE"]
     end
     
     PROG --> AUTH
@@ -136,10 +110,10 @@ graph LR
     PRICES --> SHARED
     
     GAMES --> IGDB
-    PRICES -->|Scoped DI<br/>IGameCatalog| GAMES
     PRICES -->|Gets Steam App ID| IGDB
-    PRICES --> GGDEALS
-    PRICES -.->|Registered but not used| STEAM
+    PRICES -->|Scoped DI<br/>IGameCatalog| GAMES
+    PRICES -->|Use Steam App ID| STEAM
+    PRICES -->|Use Steam App ID| GGDEALS
     
     FAV -.-> GAMES
     
@@ -159,45 +133,39 @@ graph LR
     style DB fill:#0078d4,color:#fff
     style AUTHDB fill:#1565c0,color:#fff
     style FAVDB fill:#c62828,color:#fff
+    style STEAM fill:#2e7d32,color:#fff
     style GGDEALS fill:#2e7d32,color:#fff
-    style STEAM fill:#757575,color:#fff
 ```
 
 ### Module Details
 
 #### AuthModule
-- **Endpoints**: `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `/api/auth/profile`, `/api/auth/delete-account`
 - **Storage**: SQL Server schema `auth` (ASP.NET Identity tables)
 - **Auth Method**: JWT in HttpOnly cookie (`Lune_auth`, 24-hour expiration)
 - **Integrations**: Calls `IUserDataCleaner` implementations on account deletion (currently Favorites)
 
 #### GamesModule
-- **Endpoints**: `/api/games` (search), `/api/games/{id}`, `/api/games/featured`, `/api/games/filters`, `/api/companies`
 - **Data Source**: IGDB (Internet Game Database) via Twitch OAuth token
-- **Caching**: 24-hour in-memory cache for filter options (genres, platforms)
+- **Caching**: In-memory cache for filter options (genres, platforms)
 - **Exports**: `IGameCatalog` interface for other modules to look up game metadata, external store IDs (Steam, GOG, Epic, etc.)
 
 #### FavoritesModule
-- **Endpoints**: `/api/favorites` (list), `/api/favorites/{id}` (add/remove), `/api/favorites/ids`
 - **Storage**: SQL Server schema `favorites` (one-per-user limit: 1,000)
 - **Data Model**: Favorites store a snapshot of the game at save time (name, image, genres, platforms) + the IGDB game ID
 - **Data Cleanup**: Implements `IUserDataCleaner` to delete all a user's favorites when account is deleted
 
 #### PricesModule
-- **Endpoints**: `/api/prices/{gameId}` (price comparison)
 - **Data Flow**: 
   1. Look up game's **Steam App ID** via `IGameCatalog.FindExternalIdsAsync()` (from IGDB data)
   2. Use that Steam App ID to fetch prices from registered `IPlatformPriceService` implementations
   3. Return all available prices or 503 if none succeed
 - **Currently Active**:
-  - **GG.deals API** — Current price + historical low (Italian region)
-- **Registered but Not Active**:
-  - **Steam API** — API key configured but not currently fetching prices
+  - **Steam API** ⚡ — Current price (public endpoint, Italian region)
+  - **GG.deals API** ⚡ — Current price + historical low (Italian region)
 - **Dependency Injection**: Receives `IGameCatalog` (Scoped) from Games module via DI container
 - **Caching**: 6-hour in-memory cache per game
 - **Error Handling**: If one platform fails, still return data from others
 
----
 
 ## Extensibility: Adding a New Price Service
 
@@ -262,17 +230,6 @@ graph LR
     style EPIC fill:#c0c0c0,color:#333
     style GOG fill:#c0c0c0,color:#333
 ```
-
----
-
-
-### API Communication
-
-- **All requests** go through relative `/api/` paths
-- **Development**: Angular dev-server proxy (configured in `proxy.conf.js`) forwards `/api` to `API_URL` env var
-- **Production**: Frontend app is served from the same origin as `/api`, or a reverse proxy handles the routing
-- **Authentication**: Cookies are automatically sent with all requests (browser default)
-
 
 
 
