@@ -37,7 +37,7 @@
     border-radius: 10px;
     background: var(--color-surface-alt);
 
-    .form-check { margin-bottom: 0; }
+    .form-check { margin-bottom: 0; flex-shrink: 0; }
     .form-check-label { color: var(--color-text); cursor: pointer; }
     .form-check-input:checked {
       background-color: var(--color-button-bg);

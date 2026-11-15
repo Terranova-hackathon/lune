@@ -3,6 +3,20 @@
   background: var(--color-background);
   color: var(--color-text);
   cursor: pointer;
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+
+  &::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      var(--hero-overlay),
+      url('/images/hero-bg.webp') center top / cover no-repeat;
+    pointer-events: none;
+  }
 
   &__container {
     width: 100%;
