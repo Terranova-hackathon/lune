@@ -172,7 +172,15 @@ Backend configuration, migrations and how to add a module: [backend/README.md](.
 - Add tests to the Bruno suite: see [Maintaining the tests](./testing/README.md#5-maintaining-the-tests).
 - **Database changes** are EF Core migrations in the module that owns the schema (`Lune.Auth/Data/Migrations`, `Lune.Favorites/Data/Migrations`). They run automatically at startup. Update [docs/DATABASE.md](./docs/DATABASE.md) with the change.
 
-<!-- Team workflow: branch naming, pull requests and reviews, commit message style. Add here once agreed. -->
+### Team workflow
+
+- **Every change starts as a GitHub issue,** so work and open problems are logged and visible to everyone, even when we don't work at the same time.
+- **Work on a branch, never directly on `main`.** Name it after the issue, e.g. `42-register-form-errors` or `docs/testing-readme`.
+- **Open a pull request** that links its issue (`Closes #42`), says what changed and how it was tested, and includes screenshots for UI changes.
+- **At least one review is required before merging to `main`.** The reviewer checks the code, runs it if needed, and asks questions in the PR, not in private messages.
+- **Keep `main` working:** before asking for a review, run the app with `docker compose up` and run the tests (`npm test` for the frontend, `node run-tests.mjs` for the API).
+- **Write short, descriptive commit messages** in the imperative ("Add display name length check", not "fixes"), so the commit history explains the project.
+- **Update the docs in the same PR as the code:** endpoint descriptions, `docs/openapi.json`, the relevant `.md` files and the Bruno tests (see the conventions above).
 
 ---
 

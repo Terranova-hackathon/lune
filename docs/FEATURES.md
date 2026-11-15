@@ -9,8 +9,9 @@ What LunaNova does, mapped to the requirements of the Terranova Software _Gaming
 3. [Technical specifications](#technical-specifications)
 4. [Bonus features](#bonus-features)
 5. [Engineering highlights](#engineering-highlights)
-6. [Known gaps](#known-gaps)
-7. [Client meeting / requirement clarifications](#client-meeting--requirement-clarifications)
+6. [Engineering difficulties and solutions](#engineering-difficulties-and-solutions)
+7. [Known gaps](#known-gaps)
+8. [Client meeting / requirement clarifications](#client-meeting--requirement-clarifications)
 
 ---
 
@@ -23,7 +24,13 @@ What LunaNova does, mapped to the requirements of the Terranova Software _Gaming
 | Bonus features from the brief (§VII) | Authentication, dark/light mode                                                                                                 |
 | Additional bonus features (our own)  | Price comparison, autocomplete, developer/publisher filters, related games, account management, guest browsing, privacy consent |
 
-<!-- Screenshot strip: home, search, game details, favorites, account (docs/images/) -->
+<p>
+  <img src="images/home-featured.png" alt="Home page" width="19%">
+  <img src="images/search-results.png" alt="Search results" width="19%">
+  <img src="images/game-details-overview.png" alt="Game details" width="19%">
+  <img src="images/favorites-page.png" alt="Favorites page" width="19%">
+  <img src="images/account-page.png" alt="Account page" width="19%">
+</p>
 
 ---
 
@@ -39,7 +46,11 @@ Each row lists what the brief asks for and where to see it in the app.
 | Search bar                      | On the home page, with suggestions as you type. Submitting opens the results page.                                                       |
 | Selection of games from the API | A **featured games** carousel: 10 games picked at random from the 50 most-rated on IGDB (`GET /api/games/featured`). Keyboard-navigable. |
 
-<!-- Details / screenshot -->
+<p>
+  <img src="images/home-featured.png" alt="Home page with the featured games carousel" width="32%">
+  <img src="images/home-search-suggestions.png" alt="Search suggestions while typing on the home page" width="32%">
+  <img src="images/about-page.png" alt="About page describing the project and the team" width="32%">
+</p>
 
 ### Basic search (§IV.1.2)
 
@@ -63,6 +74,11 @@ Filters combine with each other and with the search text. Within one filter, val
 
 > **Metacritic score:** the brief assumes the RAWG API, which provides Metacritic scores. LunaNova uses IGDB (see [ARCHITECTURE.md](./ARCHITECTURE.md#technology-choices)), which has no Metacritic data. IGDB's aggregated critic rating (0–100, an average of professional reviews) is used in its place and labeled as the Metacritic score.
 
+<p>
+  <img src="images/search-advanced-filters.png" alt="Advanced filters: genres, platforms, developers, publishers, critic score and sort order" width="49%">
+  <img src="images/search-filtered-results.png" alt="Results for a search combined with filters" width="49%">
+</p>
+
 ### Video game list (§IV.1.4)
 
 | Requirement                                                      | Implementation                                                               |
@@ -70,6 +86,8 @@ Filters combine with each other and with the search text. Within one filter, val
 | Cards in a grid                                                  | Responsive card grid with pagination.                                        |
 | Cover image, title, release date, average rating, main platforms | All shown on each card.                                                      |
 | Each item selectable                                             | Each card opens the game's detail page. The card also has a favorite button. |
+
+![Search results as a grid of game cards](images/games-browse.png)
 
 ### Detail page (§IV.1.5)
 
@@ -82,6 +100,11 @@ Filters combine with each other and with the search text. Within one filter, val
 | Rating, Metacritic score | User rating and critic score, shown side by side.                                           |
 | _Extra_                  | Price comparison (see [Bonus features](#bonus-features)) and a paged list of related games. |
 
+<p>
+  <img src="images/game-details-screenshot-gallery.png" alt="Screenshot gallery on the game page" width="49%">
+  <img src="images/game-details-related-games.png" alt="Related games on the game page" width="49%">
+</p>
+
 ### Favorites (§IV.1.6)
 
 | Requirement            | Implementation                                                                                                                                                                                     |
@@ -89,6 +112,11 @@ Filters combine with each other and with the search text. Within one filter, val
 | Add and remove         | Heart button on every game card and on the detail page. Repeat-safe on the server: adding twice or removing a missing favorite is not an error.                                                    |
 | Dedicated section      | **Favorites** page (signed-in users), newest first, paged.                                                                                                                                         |
 | Stored in the database | SQL Server, schema `favorites`, up to 1,000 per user. Each favorite keeps a copy of the game's summary, so the page loads without calling IGDB. See [DATABASE.md](./DATABASE.md#schema-favorites). |
+
+<p>
+  <img src="images/favorites-page.png" alt="Favorites page" width="49%">
+  <img src="images/search-results-favorited.png" alt="A favorited game marked with a filled heart in search results" width="49%">
+</p>
 
 ### Application state management (§IV.1.7)
 
@@ -102,7 +130,13 @@ Filters combine with each other and with the search text. Within one filter, val
 
 Built with Bootstrap's grid. Layouts adapt from phone to desktop: the filter panel stacks into a single column on small screens, and the card grid reflows to the screen width.
 
-<!-- Screenshots: mobile and desktop of the same page -->
+<p>
+  <img src="images/mobile-home.png" alt="Home page on a phone" width="19%">
+  <img src="images/mobile-games.png" alt="Search on a phone" width="19%">
+  <img src="images/mobile-game-details.png" alt="Game page on a phone" width="19%">
+  <img src="images/mobile-favorites.png" alt="Favorites on a phone" width="19%">
+  <img src="images/mobile-account.png" alt="Account page on a phone" width="19%">
+</p>
 
 ---
 
@@ -115,6 +149,11 @@ Built with Bootstrap's grid. Layouts adapt from phone to desktop: the filter pan
 | Relational database (§V.3)            | SQL Server 2022 with Entity Framework Core                                                                                                                                                                                                                                                                                                                                       |
 | Git (§V.4)                            | GitHub repository with the full commit history                                                                                                                                                                                                                                                                                                                                   |
 | API testing with Postman (§V.5)       | **Bruno**, an open-source Postman alternative. The collection is stored as files in Git, and its OpenCollection format imports into Postman. 79 requests with automated tests check endpoints, status codes, JSON responses, input validation and error conditions. An interactive **Scalar** reference documents every endpoint. See [testing/README.md](../testing/README.md). |
+
+<p>
+  <img src="./testing/Scalar_API_Docs.png" alt="The interactive API reference (Scalar)" width="58%">
+  <img src="./testing/bruno_report_html.png" alt="Bruno test report: 79 requests and 164 tests passed" width="38%">
+</p>
 
 ---
 
@@ -141,6 +180,22 @@ Built with Bootstrap's grid. Layouts adapt from phone to desktop: the filter pan
 | **Account management**              | Change your display name, or permanently delete your account and all its data.                                                                                                                 |
 | **Guest browsing**                  | Search and game pages work without an account. Clicking a favorite as a guest asks you to log in, then returns you to the page you were on.                                                    |
 | **Privacy consent**                 | Registration requires accepting the privacy policy. The consent time is recorded, and a privacy page explains what's stored. Account deletion removes the user's data from every module.       |
+
+<p>
+  <img src="images/game-details-facts-ratings-prices.png" alt="Price comparison with Steam and GG.deals" width="49%">
+  <img src="images/favorite-login-prompt.png" alt="Guests are asked to log in before saving a favorite" width="49%">
+</p>
+
+<p>
+  <img src="images/login.png" alt="Login page" width="32%">
+  <img src="images/register.png" alt="Registration form with privacy consent" width="32%">
+  <img src="images/account-page.png" alt="Account page: change display name or delete the account" width="32%">
+</p>
+
+<p>
+  <img src="images/account-menu.png" alt="Account menu in the navbar" width="49%">
+  <img src="images/privacy-policy.png" alt="Privacy policy page" width="49%">
+</p>
 
 <!-- Add more as they ship -->
 
