@@ -8,9 +8,10 @@ import { ScrollControls } from '../../shared/scroll-controls/scroll-controls';
 import { GamesData } from './games-data';
 import { GamesFavorites } from './games-favorites';
 import { GamesQuery } from './games-query';
+import { GamesPagination } from './components/games-pagination/games-pagination';
 
 @Component({
-  imports: [GameCard, FormsModule, GameFilters, ScrollControls],
+  imports: [GameCard, FormsModule, GameFilters, GamesPagination, ScrollControls],
   providers: [GamesData, GamesFavorites, GamesQuery],
   selector: 'app-games',
   styleUrl: './games.scss',
@@ -53,37 +54,6 @@ export class Games implements OnInit {
       }
     });
   }
-
-  readonly pageNumbers = computed<(number | '...')[]>(() => {
-    const current = this.currentPage();
-    const total = this.totalPages();
-
-    const pages = new Set<number>([1, total]);
-
-    for (let page = current - 2; page <= current + 2; page++) {
-      if (page >= 1 && page <= total) {
-        pages.add(page);
-      }
-    }
-
-    const sorted = [...pages]
-      .filter(page => page >= 1 && page <= total)
-      .sort((a, b) => a - b);
-
-    const result: (number | '...')[] = [];
-
-    sorted.forEach((page, index) => {
-      const previous = sorted[index - 1];
-
-      if (index > 0 && page - previous > 1) {
-        result.push('...');
-      }
-
-      result.push(page);
-    });
-
-    return result;
-  });
 
   toggleFavorite(id: number): void {
     if (!this.isLoggedIn()) {
