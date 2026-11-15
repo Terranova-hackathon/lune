@@ -15,15 +15,15 @@ The backend follows a **modular architecture** where each feature owns its domai
 
 ### Technology Choices
 
-| Layer              | Technology                                                                           | Why                                                                          |
-| ------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| **Backend**        | ASP.NET Core 10 (.NET SDK 10)                                                        | Type-safe, high-performance, modular with dependency injection               |
-| **Frontend**       | Angular 22                                                                           | Component-based, reactive (RxJS), tested (Vitest), modern tooling            |
-| **Database**       | SQL Server 2022                                                                      | Enterprise-grade, Schema-per-module isolation, EF Core integration           |
-| **Deployment**     | Docker Compose                                                                       | Local dev parity with production, service networking, easy reset             |
-| **Authentication** | JWT in HttpOnly cookies                                                              | CSRF-safe, works across subdomains, XSS-resistant storage                    |
-| **Game Data**      | IGDB (via Twitch OAuth)                                                              | Comprehensive game metadata, regular updates, free tier available            |
-| **Pricing Data**   | GG.deals  and Steam for current prices and historical lows; regional support (Italy) | IGDB didnt have pricing data, requiring additional API for price comparison. |
+| Layer              | Technology                                                                           | Why                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| **Backend**        | ASP.NET Core 10 (.NET SDK 10)                                                        | Type-safe, high-performance, modular with dependency injection                |
+| **Frontend**       | Angular 22                                                                           | Component-based, reactive (RxJS), tested (Vitest), modern tooling             |
+| **Database**       | SQL Server 2022                                                                      | Enterprise-grade, Schema-per-module isolation, EF Core integration            |
+| **Deployment**     | Docker Compose                                                                       | Local dev parity with production, service networking, easy reset              |
+| **Authentication** | JWT in HttpOnly cookies                                                              | CSRF-safe, works across subdomains, XSS-resistant storage                     |
+| **Game Data**      | IGDB (via Twitch OAuth)                                                              | Comprehensive game metadata, regular updates, free tier available             |
+| **Pricing Data**   | GG.deals  and Steam for current prices and historical lows; regional support (Italy) | IGDB didnt have pricing data, requiring additional APIs for price comparison. |
 
 ---
 
@@ -45,7 +45,7 @@ graph TB
 
     API -->|HTTPS| IGDB["IGDB API<br/>Game Metadata"]
     API -->|HTTPS| Steam["Steam API<br/>Current Prices"]
-    API -->|HTTPS| GGDeals["GG.deals API<br/>Current Pricesy"]
+    API -->|HTTPS| GGDeals["GG.deals API<br/>Current Prices"]
 
     style SQL fill:#0078d4,color:#fff
     style API fill:#68217a,color:#fff
@@ -60,10 +60,10 @@ graph TB
 
 The backend is built on a **plugin module system**. Each module:
 
-1. Implements `IModule` interface (register services, map endpoints, initialize)
-2. Owns one database schema
-3. Communicates with other modules via shared interfaces
-4. Registers with the main app in `Program.cs`
+1. **Implements** `IModule` interface (register services, map endpoints, initialize)
+2. **Owns** one database schema
+3. **Communicates** with other modules via shared interfaces
+4. **Registers** with the main app in `Program.cs`
 
 ### Module Connections Diagram
 
@@ -141,7 +141,7 @@ graph LR
 
 - **Storage**: SQL Server schema `auth` (ASP.NET Identity tables)
 - **Auth Method**: JWT in HttpOnly cookie (`Lune_auth`, 24-hour expiration)
-- **Integrations**: Calls `IUserDataCleaner` implementations on account deletion (currently Favorites)
+- **Integrations**: Calls `IUserDataCleaner` implementations on account deletion (currently only Favorites data requires cleaning)
 
 #### GamesModule
 
