@@ -12,39 +12,41 @@ Scalar is for exploring one endpoint at a time. Bruno is for checking that the w
 
 [Bruno](https://docs.usebruno.com/) stores collections as plain files in the open OpenCollection YAML format (`opencollection.yml` at the collection root), so they live in Git with the code and can be imported into other tools such as Postman.
 
-**Quick start:** [start the backend](#start-the-backend), then [run the test suite](#run-everything).
+**Quick start:** [get the app running](../README.md#quick-start), [check the backend is ready](#check-the-backend-is-ready), then [run the test suite](#run-everything).
 
 ## Contents
 
 1. [Setup](#1-setup)
-   - [Required](#required) · [Optional](#optional) · [Start the backend](#start-the-backend)
-2. [Exploring the API with Scalar](#2-exploring-the-api-with-scalar)
-   - [Finding your way around](#finding-your-way-around) · [Sending requests](#sending-requests) · [Signing in from Scalar](#signing-in-from-scalar) · [Other useful URLs](#other-useful-urls)
-3. [Running the test suite with Bruno](#3-running-the-test-suite-with-bruno)
-   - [Run everything](#run-everything) · [Reading the report](#reading-the-report) · [What the suite does](#what-the-suite-does) · [How sign-in works in the tests](#how-sign-in-works-in-the-tests)
-   - [Environment variables](#environment-variables) · [Running single requests](#running-single-requests) · [Not covered](#not-covered)
-4. [Troubleshooting](#4-troubleshooting)
-5. [Maintaining the tests](#5-maintaining-the-tests)
-   - [Updating tests for new endpoints](#updating-tests-for-new-endpoints)
-6. [Frontend unit tests](#6-frontend-unit-tests)
+2. [Required](#required) · [Optional](#optional) · [Check the backend is ready](#check-the-backend-is-ready)
+3. [Exploring the API with Scalar](#2-exploring-the-api-with-scalar)
+4. [Finding your way around](#finding-your-way-around) · [Sending requests](#sending-requests) · [Signing in from Scalar](#signing-in-from-scalar) · [Other useful URLs](#other-useful-urls)
+5. [Running the test suite with Bruno](#3-running-the-test-suite-with-bruno)
+6. [Run everything](#run-everything) · [Reading the report](#reading-the-report) · [What the suite does](#what-the-suite-does) · [How sign-in works in the tests](#how-sign-in-works-in-the-tests)
+7. [Environment variables](#environment-variables) · [Running single requests](#running-single-requests) · [Not covered](#not-covered)
+8. [Troubleshooting](#4-troubleshooting)
+9. [Maintaining the tests](#5-maintaining-the-tests)
+10. [Updating tests for new endpoints](#updating-tests-for-new-endpoints)
+11. [Frontend unit tests](#6-frontend-unit-tests)
 
 ---
 
 ## 1. Setup
 
+**First, get the app running** by following the [Quick start in the main README](../README.md#quick-start): create `.env`, fill in the required keys and run `docker compose up`. Everything in this guide assumes the backend is running on `http://localhost:3001`.
+
+The tests only need a few extra tools on top of that.
+
 ### Required
 
-| Tool                                  | Why                                                                                                                                 | Install                                                                   |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Docker Engine + Docker Compose plugin | Runs SQL Server and the backend                                                                                                     | [docs.docker.com/engine/install](https://docs.docker.com/engine/install/) |
-| Node.js v22.22.3 or newer             | Runs the Bruno CLI, the test runner script and the frontend tests (the Bruno CLI alone needs v20+, the Angular CLI needs v22.22.3+) | [nodejs.org](https://nodejs.org/) or your distro's package manager        |
-| Bruno CLI                             | Runs the test collection from the terminal                                                                                          | `npm install -g @usebruno/cli`                                            |
+| Tool                      | Why                                                                                                                                 | Install                                                            |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Node.js v22.22.3 or newer | Runs the Bruno CLI, the test runner script and the frontend tests (the Bruno CLI alone needs v20+, the Angular CLI needs v22.22.3+) | [nodejs.org](https://nodejs.org/) or your distro's package manager |
+| Bruno CLI                 | Runs the test collection from the terminal                                                                                          | `npm install -g @usebruno/cli`                                     |
 
 Check the installs:
 
 ``` bash
-docker compose version
-node --version        # v20 or newer
+node --version        # v22.22.3 or newer
 bru --version
 ```
 
@@ -56,25 +58,16 @@ bru --version
 | Bruno VS Code extension | The same inside VS Code                                                                   | Extension ID `bruno-api-client.bruno`                        |
 | Python 3 + PyYAML       | Only to regenerate the collection (see [Maintaining the tests](#5-maintaining-the-tests)) | `pip install pyyaml`                                         |
 
-### Start the backend
+### Check the backend is ready
 
-From the repository root:
-
-``` bash
-cp .env.example .env      # first time only; fill in the keys
-docker compose up -d
-```
-
-The backend needs these values in `.env`: `SA_PASSWORD`, `JWT_SECRET`, `IGDB_CLIENT_ID`, `IGDB_API_SECRET` and `GGDEALS_API_KEY`. Without the IGDB keys, every game endpoint returns `503`.
-
-Wait until the backend is ready:
+Before running tests, wait until the backend reports it's ready:
 
 ``` bash
 curl http://localhost:3001/health          # ok
 curl http://localhost:3001/health/ready    # {"status":"Healthy",...}
 ```
 
-`/health` only means the process is running. `/health/ready` also checks the database, so wait for that one before testing.
+`/health` only means the process is running. `/health/ready` also checks the database, so wait for that one. If game or price tests return `503`, check the IGDB and GG.deals keys in `.env` (see the [Quick start](../README.md#quick-start)).
 
 ---
 
@@ -104,6 +97,7 @@ Every endpoint has a **Test Request** button that opens a request client in the 
 Protected endpoints (Favorites, and `/api/auth/me`, `/profile`, `/delete-account`) need the auth cookie. Because Scalar is served by the backend itself, the browser handles the cookie for you:
 
 1. Open **Auth → Register** (or **Login**) and send a request with a valid body, for example:
+
 ``` json
 {
   "email": "you@example.com",
@@ -112,9 +106,10 @@ Protected endpoints (Favorites, and `/api/auth/me`, `/profile`, `/delete-account
   "acceptedPrivacyPolicy": true
 }
 ```
-2. The response sets the `Lune_auth` cookie in your browser.
-3. Protected endpoints now work from the same browser tab. Try **Auth → Get Current User**.
-4. **Auth → Logout** ends the session.
+
+1. The response sets the `Lune_auth` cookie in your browser.
+2. Protected endpoints now work from the same browser tab. Try **Auth → Get Current User**.
+3. **Auth → Logout** ends the session.
 
 Accounts you create this way are real rows in your local database. Delete them with **Auth → Delete Account** when you're done.
 
@@ -247,14 +242,18 @@ The maintenance scripts live in [`endpoint-testing/tools/`](endpoint-testing/too
 
 - **Adding a test:** add a request in the Bruno app (it keeps the URL and the query parameters in sync), put it in the right folder, and set its `seq` so it runs at the right point. Check the order with `node run-tests.mjs --dry-run`.
 - **Query parameters must be in the URL.** The Bruno CLI only sends what's in the request's `url` field. If you edit `.yml` files by hand or import requests from the OpenAPI document, run:
+
 ``` bash
 python3 testing/endpoint-testing/tools/fix_query_params.py testing/endpoint-testing/lune-reference-api
 ```
+
 - **Regenerating the collection** from the reference requests (after a big API change):
+
 ``` bash
 python3 testing/endpoint-testing/tools/build.py path/to/lune-reference-api    # run on a copy; overwrites files
 python3 testing/endpoint-testing/tools/check.py path/to/lune-reference-api    # YAML, JSON bodies, variables, script syntax
 ```
+
 - Add `reports/` to `.gitignore` so test reports aren't committed.
 
 ### Updating tests for new endpoints
@@ -262,27 +261,32 @@ python3 testing/endpoint-testing/tools/check.py path/to/lune-reference-api    # 
 When the API changes, start from the OpenAPI document the backend generates.
 
 1. **Export the OpenAPI document.** With the project running, from the repository root:
+
 ``` bash
 curl -s http://localhost:3001/openapi/v1.json -o docs/openapi.json
 ```
-   This also keeps the copy in `docs/` up to date.
 
-2. **Generate a fresh reference collection into a separate folder.** Don't import into `lune-reference-api`: that would overwrite the test suite.
+This also keeps the copy in `docs/` up to date.
+
+1. **Generate a fresh reference collection into a separate folder.** Don't import into `lune-reference-api`: that would overwrite the test suite.
+
 ``` bash
 bru import openapi -s docs/openapi.json -o /tmp/lune-openapi-import \
   -n "Lune Reference API" --collection-format=opencollection
 ```
-   (Requires the Bruno CLI from [Setup](#1-setup).)
 
-3. **Copy the new or changed requests** from `/tmp/lune-openapi-import` into the matching folder of `lune-reference-api`. Give each one a `seq` that puts it at the right point in the run, and add its tests in the Bruno app.
+(Requires the Bruno CLI from [Setup](#1-setup).)
 
-4. **Fix the URLs and check the order:**
+1. **Copy the new or changed requests** from `/tmp/lune-openapi-import` into the matching folder of `lune-reference-api`. Give each one a `seq` that puts it at the right point in the run, and add its tests in the Bruno app.
+
+2. **Fix the URLs and check the order:**
+
 ``` bash
 python3 testing/endpoint-testing/tools/fix_query_params.py testing/endpoint-testing/lune-reference-api
 cd testing/endpoint-testing/lune-reference-api && node run-tests.mjs --dry-run
 ```
 
-5. **Run the suite** (`node run-tests.mjs`) and check the report.
+1. **Run the suite** (`node run-tests.mjs`) and check the report.
 
 ---
 
