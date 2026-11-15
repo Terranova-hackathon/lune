@@ -133,77 +133,10 @@ Standard ASP.NET Identity tables plus three custom columns on `AspNetUsers` for 
 
 Indexes: `PK_AspNetUsers (Id)`, `UserNameIndex (NormalizedUserName) UNIQUE WHERE NOT NULL`, `EmailIndex (NormalizedEmail)`.
 
-### `auth.AspNetRoles`
-
-Roles for authorization. Users are assigned roles via `AspNetUserRoles`.
-
-| Column | Type | Null | Notes |
-|---|---|:-:|---|
-| `Id` | nvarchar(450) | No | **PK**, GUID string |
-| `Name` | nvarchar(256) | Yes | Role name, e.g. "admin", "moderator" |
-| `NormalizedName` | nvarchar(256) | Yes | Uppercased. **Unique index** `RoleNameIndex` |
-| `ConcurrencyStamp` | nvarchar(max) | Yes | Optimistic concurrency control |
-
-### `auth.AspNetUserRoles`
-
-Junction table: assigns roles to users (many-to-many).
-
-| Column | Type | Null | Notes |
-|---|---|:-:|---|
-| `UserId` | nvarchar(450) | No | **PK part 1**. FK → `AspNetUsers.Id` (cascade) |
-| `RoleId` | nvarchar(450) | No | **PK part 2**. FK → `AspNetRoles.Id` (cascade) |
-
-### `auth.AspNetUserClaims`
-
-Custom claims attached to users. Claims are key-value pairs for fine-grained authorization (separate from roles).
-
-| Column | Type | Null | Notes |
-|---|---|:-:|---|
-| `Id` | int | No | **PK**, identity |
-| `UserId` | nvarchar(450) | No | **FK** → `AspNetUsers.Id` (cascade). Index `IX_AspNetUserClaims_UserId` |
-| `ClaimType` | nvarchar(max) | Yes | e.g. "preferred_username", "email_verified" |
-| `ClaimValue` | nvarchar(max) | Yes | The claim's value |
-
-### `auth.AspNetRoleClaims`
-
-Claims attached to roles. Any user with that role inherits the role's claims.
-
-| Column | Type | Null | Notes |
-|---|---|:-:|---|
-| `Id` | int | No | **PK**, identity |
-| `RoleId` | nvarchar(450) | No | **FK** → `AspNetRoles.Id` (cascade). Index `IX_AspNetRoleClaims_RoleId` |
-| `ClaimType` | nvarchar(max) | Yes | The claim type |
-| `ClaimValue` | nvarchar(max) | Yes | The claim's value |
-
-### `auth.AspNetUserTokens`
-
-Refresh tokens and other auth tokens stored per user. Used for OAuth and token-based authentication.
-
-| Column | Type | Null | Notes |
-|---|---|:-:|---|
-| `UserId` | nvarchar(450) | No | **PK part 1**. FK → `AspNetUsers.Id` (cascade) |
-| `LoginProvider` | nvarchar(450) | No | **PK part 2**. e.g. "GitHub", "Google", or provider name |
-| `Name` | nvarchar(450) | No | **PK part 3**. e.g. "access_token", "refresh_token" |
-| `Value` | nvarchar(max) | Yes | The token value |
-
-Composite key ensures one token per (user, provider, name) tuple. Index `IX_AspNetUserTokens_UserId`.
-
-### `auth.AspNetUserLogins`
-
-External login credentials (e.g., GitHub OAuth). Reserved for third-party authentication.
-
-| Column | Type | Null | Notes |
-|---|---|:-:|---|
-| `LoginProvider` | nvarchar(450) | No | **PK part 1**. e.g. "GitHub" |
-| `ProviderKey` | nvarchar(450) | No | **PK part 2**. The external user ID (e.g. GitHub user ID) |
-| `ProviderDisplayName` | nvarchar(max) | Yes | Display name from provider |
-| `UserId` | nvarchar(450) | No | **FK** → `AspNetUsers.Id` (cascade). Index `IX_AspNetUserLogins_UserId` |
-
-Composite key prevents duplicate logins. Currently not in use; reserved for GitHub OAuth integration.
 
 ## Schema `favorites`
 
-### `favorites.Favorites`
+### `Favorites`
 
 Stores user-favorited games. Each row holds a **snapshot** of the game's metadata from IGDB at the time of favoriting. The snapshot is periodically refreshed so game data stays current (e.g., rating changes, new platforms added) without requiring the user to re-favorite.
 
@@ -266,59 +199,6 @@ CREATE TABLE auth.AspNetUsers (
     AccessFailedCount    int            NOT NULL
 );
 CREATE INDEX EmailIndex ON auth.AspNetUsers (NormalizedEmail);
-
--- Roles
-CREATE TABLE auth.AspNetRoles (
-    Id               nvarchar(450) NOT NULL CONSTRAINT PK_AspNetRoles PRIMARY KEY,
-    Name             nvarchar(256) NULL UNIQUE,
-    NormalizedName   nvarchar(256) NULL UNIQUE,
-    ConcurrencyStamp nvarchar(max) NULL
-);
-
--- User → Role assignments (many-to-many)
-CREATE TABLE auth.AspNetUserRoles (
-    UserId nvarchar(450) NOT NULL CONSTRAINT FK_AspNetUserRoles_AspNetUsers_UserId FOREIGN KEY REFERENCES auth.AspNetUsers(Id) ON DELETE CASCADE,
-    RoleId nvarchar(450) NOT NULL CONSTRAINT FK_AspNetUserRoles_AspNetRoles_RoleId FOREIGN KEY REFERENCES auth.AspNetRoles(Id) ON DELETE CASCADE,
-    CONSTRAINT PK_AspNetUserRoles PRIMARY KEY (UserId, RoleId)
-);
-CREATE INDEX IX_AspNetUserRoles_RoleId ON auth.AspNetUserRoles(RoleId);
-
--- User claims (authorization assertions)
-CREATE TABLE auth.AspNetUserClaims (
-    Id         int            NOT NULL IDENTITY(1,1) CONSTRAINT PK_AspNetUserClaims PRIMARY KEY,
-    UserId     nvarchar(450)  NOT NULL CONSTRAINT FK_AspNetUserClaims_AspNetUsers_UserId FOREIGN KEY REFERENCES auth.AspNetUsers(Id) ON DELETE CASCADE,
-    ClaimType  nvarchar(max)  NULL,
-    ClaimValue nvarchar(max)  NULL
-);
-CREATE INDEX IX_AspNetUserClaims_UserId ON auth.AspNetUserClaims(UserId);
-
--- Role claims
-CREATE TABLE auth.AspNetRoleClaims (
-    Id         int           NOT NULL IDENTITY(1,1) CONSTRAINT PK_AspNetRoleClaims PRIMARY KEY,
-    RoleId     nvarchar(450) NOT NULL CONSTRAINT FK_AspNetRoleClaims_AspNetRoles_RoleId FOREIGN KEY REFERENCES auth.AspNetRoles(Id) ON DELETE CASCADE,
-    ClaimType  nvarchar(max) NULL,
-    ClaimValue nvarchar(max) NULL
-);
-CREATE INDEX IX_AspNetRoleClaims_RoleId ON auth.AspNetRoleClaims(RoleId);
-
--- User tokens (refresh tokens, OAuth tokens)
-CREATE TABLE auth.AspNetUserTokens (
-    UserId        nvarchar(450) NOT NULL CONSTRAINT FK_AspNetUserTokens_AspNetUsers_UserId FOREIGN KEY REFERENCES auth.AspNetUsers(Id) ON DELETE CASCADE,
-    LoginProvider nvarchar(450) NOT NULL,
-    Name          nvarchar(450) NOT NULL,
-    Value         nvarchar(max) NULL,
-    CONSTRAINT PK_AspNetUserTokens PRIMARY KEY (UserId, LoginProvider, Name)
-);
-
--- External logins (OAuth, social auth)
-CREATE TABLE auth.AspNetUserLogins (
-    LoginProvider       nvarchar(450) NOT NULL,
-    ProviderKey         nvarchar(450) NOT NULL,
-    ProviderDisplayName nvarchar(max) NULL,
-    UserId              nvarchar(450) NOT NULL CONSTRAINT FK_AspNetUserLogins_AspNetUsers_UserId FOREIGN KEY REFERENCES auth.AspNetUsers(Id) ON DELETE CASCADE,
-    CONSTRAINT PK_AspNetUserLogins PRIMARY KEY (LoginProvider, ProviderKey)
-);
-CREATE INDEX IX_AspNetUserLogins_UserId ON auth.AspNetUserLogins(UserId);
 
 -- Favorited games with snapshots
 CREATE TABLE favorites.Favorites (
