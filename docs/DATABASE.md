@@ -1,6 +1,6 @@
 # Lune database schema
 
-One SQL Server database (`Lune`).Follows [ASP.NET Core authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/?view=aspnetcore-10.0) standards. Each backend module owns its own **schema** and its own EF Core `DbContext` and migrations, which are applied automatically on startup. Each schema has its own `__EFMigrationsHistory` table.
+One SQL Server database (`Lune`). Follows [ASP.NET Core authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/?view=aspnetcore-10.0) standards. Each backend module owns its own **schema** and its own EF Core `DbContext` and migrations, which are applied automatically on startup. Each schema has its own `__EFMigrationsHistory` table.
 
 | Module    | SQL schema  | Purpose                                                                   |
 | --------- | ----------- | ------------------------------------------------------------------------- |
@@ -10,7 +10,7 @@ One SQL Server database (`Lune`).Follows [ASP.NET Core authentication](https://l
 
 ## Architecture overview
 
-**Game data** is not persisted in the database—it comes from the IGDB API and is cached in memory. When a user favorites a game, a **snapshot** of the game's metadata (name, image, rating, genres, platforms, release date) is stored in the `Favorites` table. This snapshot is updated periodically to reflect changes in IGDB without requiring the user to re-favorite.
+**Game data** is not persisted in the database—it comes from the IGDB API and is cached in memory. When a user favorites a game, a **snapshot** of the game's metadata (name, image, rating, critic score, genres, platforms, release date) is stored in the `Favorites` table, so the favorites list loads without calling IGDB. Snapshots aren't refreshed yet; a refresh job is planned (see [FUTURE.md](./FUTURE.md#refreshing-favorite-snapshots)).
 
 **User identity and authorization** use ASP.NET Core Identity with standard tables (`AspNetUsers`, `AspNetRoles`, `AspNetUserRoles`, `AspNetUserClaims`, etc.) plus three custom columns on `AspNetUsers` for additional metadata.
 
@@ -113,26 +113,26 @@ Standard ASP.NET Identity tables plus three custom columns on `AspNetUsers` for 
 
 ### `auth.AspNetUsers`
 
-| Column                  | Type           | Null | Notes                                                                    |
-| ----------------------- | -------------- | :--: | ------------------------------------------------------------------------ |
-| `Id`                    | nvarchar(450)  |  No  | **PK**, GUID string                                                      |
-| `DisplayName`           | nvarchar(max)  | Yes  | **Custom**                                                               |
-| `CreatedAtUtc`          | datetime2      |  No  | **Custom**, set at registration                                          |
-| `PrivacyConsentedAtUtc` | datetime2      | Yes  | **Custom**, server-recorded UTC consent time; null for existing accounts |
-| `UserName`              | nvarchar(256)  | Yes  | Same as `Email` at registration                                          |
-| `NormalizedUserName`    | nvarchar(256)  | Yes  | Uppercased. **Unique index**                                             |
-| `Email`                 | nvarchar(256)  | Yes  |                                                                          |
-| `NormalizedEmail`       | nvarchar(256)  | Yes  | Uppercased. Index                                                        |
-| `EmailConfirmed`        | bit            |  No  | Always false (no confirmation flow)                                      |
-| `PasswordHash`          | nvarchar(max)  | Yes  | Salted PBKDF2 hash. Never the password.                                  |
-| `SecurityStamp`         | nvarchar(max)  | Yes  |                                                                          |
-| `ConcurrencyStamp`      | nvarchar(max)  | Yes  |                                                                          |
-| `PhoneNumber`           | nvarchar(max)  | Yes  | Unused                                                                   |
-| `PhoneNumberConfirmed`  | bit            |  No  | Unused                                                                   |
-| `TwoFactorEnabled`      | bit            |  No  | Unused                                                                   |
-| `LockoutEnd`            | datetimeoffset | Yes  | Set after repeated failed logins                                         |
-| `LockoutEnabled`        | bit            |  No  |                                                                          |
-| `AccessFailedCount`     | int            |  No  | Failed logins since the last success                                     |
+| Column                  | Type           | Null | Notes                                                                            |
+| ----------------------- | -------------- | :--: | -------------------------------------------------------------------------------- |
+| `Id`                    | nvarchar(450)  |  No  | **PK**, GUID string                                                              |
+| `DisplayName`           | nvarchar(max)  | Yes  | **Custom**. Unique (case-insensitive) when set; checked in code, not by an index |
+| `CreatedAtUtc`          | datetime2      |  No  | **Custom**, set at registration                                                  |
+| `PrivacyConsentedAtUtc` | datetime2      | Yes  | **Custom**, server-recorded UTC consent time; null for existing accounts         |
+| `UserName`              | nvarchar(256)  | Yes  | Same as `Email` at registration                                                  |
+| `NormalizedUserName`    | nvarchar(256)  | Yes  | Uppercased. **Unique index**                                                     |
+| `Email`                 | nvarchar(256)  | Yes  |                                                                                  |
+| `NormalizedEmail`       | nvarchar(256)  | Yes  | Uppercased. Index                                                                |
+| `EmailConfirmed`        | bit            |  No  | Always false (no confirmation flow)                                              |
+| `PasswordHash`          | nvarchar(max)  | Yes  | Salted PBKDF2 hash. Never the password.                                          |
+| `SecurityStamp`         | nvarchar(max)  | Yes  |                                                                                  |
+| `ConcurrencyStamp`      | nvarchar(max)  | Yes  |                                                                                  |
+| `PhoneNumber`           | nvarchar(max)  | Yes  | Unused                                                                           |
+| `PhoneNumberConfirmed`  | bit            |  No  | Unused                                                                           |
+| `TwoFactorEnabled`      | bit            |  No  | Unused                                                                           |
+| `LockoutEnd`            | datetimeoffset | Yes  | Unused: login lockout isn't enabled yet                                          |
+| `LockoutEnabled`        | bit            |  No  |                                                                                  |
+| `AccessFailedCount`     | int            |  No  | Unused: login lockout isn't enabled yet                                          |
 
 Indexes: `PK_AspNetUsers (Id)`, `UserNameIndex (NormalizedUserName) UNIQUE WHERE NOT NULL`, `EmailIndex (NormalizedEmail)`.
 
@@ -140,7 +140,7 @@ Indexes: `PK_AspNetUsers (Id)`, `UserNameIndex (NormalizedUserName) UNIQUE WHERE
 
 ### `Favorites`
 
-Stores user-favorited games. Each row holds a **snapshot** of the game's metadata from IGDB at the time of favoriting. The snapshot is periodically refreshed so game data stays current (e.g., rating changes, new platforms added) without requiring the user to re-favorite.
+Stores user-favorited games. Each row holds a **snapshot** of the game's metadata from IGDB at the time of favoriting. A planned job will refresh old snapshots so game data stays current (e.g., rating changes, new platforms added) without the user re-favoriting; until then, a snapshot keeps the values from when the game was saved.
 
 | Column                 | Type          | Null | Notes                                                                                    |
 | ---------------------- | ------------- | :--: | ---------------------------------------------------------------------------------------- |
@@ -150,13 +150,13 @@ Stores user-favorited games. Each row holds a **snapshot** of the game's metadat
 | `Name`                 | nvarchar(300) |  No  | Game name (truncated to 300 chars)                                                       |
 | `BackgroundImage`      | nvarchar(500) | Yes  | Cover image URL (truncated to 500 chars, `null` if longer)                               |
 | `Released`             | nvarchar(10)  | Yes  | Release date in `yyyy-MM-dd` format                                                      |
-| `Rating`               | float         |  No  | IGDB rating score                                                                        |
-| `Metacritic`           | int           | Yes  | Metacritic score                                                                         |
-| `Genres`               | nvarchar(max) |  No  | JSON array of strings, e.g. `["RPG","Action"]`                                           |
-| `Platforms`            | nvarchar(max) |  No  | JSON array of platform names                                                             |
+| `Rating`               | float         |  No  | IGDB user rating, scaled to 0–5                                                          |
+| `Metacritic`           | int           | Yes  | Critic score, 0–100 (IGDB's aggregated critic rating, shown as the Metacritic score)     |
+| `Genres`               | nvarchar(max) |  No  | JSON array of `{Value, Name}` objects, e.g. `[{"Value":"adventure","Name":"Adventure"}]` |
+| `Platforms`            | nvarchar(max) |  No  | JSON array of `{Value, Name}` objects; `Value` is the IGDB platform ID                   |
 | **Tracking columns**   |               |      |                                                                                          |
 | `CreatedAtUtc`         | datetime2     |  No  | When the user favorited this game. Sorts the user's list newest-first.                   |
-| `SnapshotUpdatedAtUtc` | datetime2     |  No  | When the snapshot was last refreshed from IGDB. Identifies rows stale enough to refresh. |
+| `SnapshotUpdatedAtUtc` | datetime2     |  No  | When the snapshot was taken. Reserved for the planned refresh job, to find stale rows.   |
 
 **Key design decisions:**
 
@@ -164,7 +164,7 @@ Stores user-favorited games. Each row holds a **snapshot** of the game's metadat
 - **Composite PK `(UserId, IgdbId)`** ensures a user can favorite each game at most once. Duplicate inserts are automatically rejected.
 - **No foreign key on `UserId`.** Intentional decoupling: `favorites` schema can move to its own database without changing the auth schema. Consequences:
 - Ownership is enforced by the API layer: the user ID is extracted from the auth token, never trusted from the client.
-- **`SnapshotUpdatedAtUtc` drives refresh logic.** A periodic job (or explicit API call) can refresh stale snapshots by querying rows where `SnapshotUpdatedAtUtc < now - 7 days`, re-fetching from IGDB, and updating only the snapshot columns.
+- **`SnapshotUpdatedAtUtc` is ready for refresh logic.** The planned job would query rows where `SnapshotUpdatedAtUtc < now - 7 days`, re-fetch them from IGDB, and update only the snapshot columns. It isn't implemented yet.
 - **Limit: 1000 favorites per user.** Enforced in code, not in the database.
 - **Index `IX_Favorites_IgdbId (IgdbId)`** (non-unique). Allows fast lookups of "all users who favorited this game" for analytics or cache invalidation.
 
@@ -221,12 +221,10 @@ CREATE INDEX IX_Favorites_IgdbId ON favorites.Favorites(IgdbId);
 
 ### Migration Scripts
 
-After modifying the database structure, the following scripts will auto-run on next rebuild,
-applying the migration and updating the migration history in the database.
+Migrations run automatically when the backend starts: each module applies its pending migrations and records them in its own `__EFMigrationsHistory` table. After changing a module's data model, add a migration in that module.
 
 Complete migration scripts are in `backend/src/Lune.Auth/Data/Migrations/` and `backend/src/Lune.Favorites/Data/Migrations/`.
 
 ### Database Image Updates
 
-SQL Server version is set to a fixed version in `docker-compose.yaml`.
-Ensure that local changes are compatible with project server version.
+The SQL Server image is pinned to a fixed version (2022 CU27) in `docker-compose.yml`. Make sure local changes are compatible with that version, and never move the image to a lower build: a newer SQL Server can upgrade the data files, and an older one can't open them again.
