@@ -174,7 +174,16 @@ The parts that aren't visible in the UI, but that we'd most like evaluators to s
 - **Automated API test suite.** 79 Bruno requests cover every endpoint and its documented error cases. Each run creates its own test users and deletes them afterwards, and writes an HTML report. One command runs it.
 - **One-command development environment.** `docker compose up` starts SQL Server, the backend and the frontend with hot reload. Image versions are pinned so every machine builds the same thing.
 
-<!-- Add: difficulties encountered and how we solved them (the brief asks for this in the presentation), e.g. switching from RAWG to IGDB -->
+## Engineering Difficulties and Solutions
+
+- **New Tech Stack** Nobody on the team had ever worked with C#, ASP.Net or Angular before. We decided to dedicate the first week exclusively to research and building in an experimental repo, allowing certain parts of the code skeleton to be builtout by AI, which allowed us to understand how projects in those frameworks are organized and play around with various architectures. We then began building from scratch in a new repo in the second week, once we were better oriented.
+
+- **Linux-Only Dev Environment** Our team did not all have access to Windows, so we were constrained in what IDE and development tools we could use. Microsoft Dotnet seemed best supported by Visual Studio IDE, but we instead had to use VS Code with Dotnet.SDK. We eventually got confortable working this way, but initial setup and configuration was a much more manual process.
+
+- **Broken RAWG.io API** Like all teams, we encountered an obstical when the primary API on which our site was pulling data went down (maybe for good). Luckily our architecture was fairly modular and we were able to quickly replace the RAWG API with the IGDB API. This further encouraged us to maintain modular architecture and develop our application in a way that allows for future external APIs to be integrated more easily in the future. In the end, this setback ended up strengthening our team and our final project.
+
+- **Asyncronous Work** Our team was not able to regularly meet in person and work comittments often meant that not all team members could work at the same time. We heavily utilized Github's Project management, branching and review tools to keep everyone informed and on task.
+  This ended up working well for us - requiring reviews before pushing to main and having all issues digitally logged helped us individually avoid mistakes and forgotten problems.
 
 ---
 
