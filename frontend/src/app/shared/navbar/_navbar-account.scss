@@ -1,0 +1,131 @@
+.navbar {
+	&__user {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+
+		padding: 6px 10px;
+
+		border: none;
+		border-radius: 8px;
+
+		background: transparent;
+		color: var(--color-muted);
+
+		font-weight: 600;
+		cursor: pointer;
+
+		transition:
+			background 0.2s ease,
+			color 0.2s ease;
+
+		&:hover {
+			background: var(--color-surface);
+			color: var(--color-primary);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-primary);
+			outline-offset: 3px;
+		}
+	}
+
+	&__account-profile {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+
+		margin-top: 24px;
+
+		> i {
+			font-size: 2.6rem;
+			color: var(--color-primary);
+		}
+
+		strong {
+			color: var(--color-text);
+		}
+
+		p {
+			margin: 4px 0 0;
+			color: var(--color-muted);
+			font-size: 0.9rem;
+			overflow-wrap: anywhere;
+		}
+	}
+
+	&__account {
+		position: relative;
+	}
+
+	&__account-dropdown {
+		position: absolute;
+		top: calc(100% + 12px);
+		right: 0;
+		z-index: 1000;
+
+		width: 340px;
+		max-width: calc(100vw - 32px);
+		padding: 24px;
+
+		background: var(--color-surface);
+		color: var(--color-text);
+		border: 1px solid var(--color-border);
+		border-radius: 14px;
+
+		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+
+		h2 {
+			font-size: 1.25rem;
+			font-weight: 700;
+			margin: 0 0 20px;
+		}
+
+		hr {
+			border-color: var(--color-border);
+			margin: 20px 0;
+		}
+	}
+
+
+	&__account-manage {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+
+		width: 100%;
+		padding: 8px 10px;
+
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+
+		background: var(--color-surface-alt);
+		color: var(--color-text);
+
+		font-size: 0.8rem;
+		line-height: 1.4;
+		text-align: left;
+		cursor: pointer;
+
+		margin-bottom: 12px;
+		min-height: 36px;
+		box-sizing: border-box;
+
+		transition: border-color 0.2s ease;
+
+		&:hover {
+			border-color: var(--color-primary);
+			color: var(--color-primary);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-primary);
+			outline-offset: 3px;
+		}
+
+		.bi-chevron-right {
+			margin-left: auto;
+			flex-shrink: 0;
+		}
+	}
+}
