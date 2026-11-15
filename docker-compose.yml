@@ -1,25 +1,5 @@
 services:
-    # Mock API (ASP.NET Core, in-memory). Starts by default so the frontend can be built without the real backend.
-    # mock-api:
-    #     build:
-    #         context: ./mock-api
-    #         dockerfile: Dockerfile
-    #     ports:
-    #         - '4001:4001'
-    #     volumes:
-    #         - ./mock-api:/app
-    #         - /app/bin
-    #         - /app/obj
-    #     networks:
-    #         - private-network
-    #     healthcheck:
-    #         test: ['CMD-SHELL', 'curl -fs http://localhost:4001/health || exit 1']
-    #         interval: 5s
-    #         timeout: 3s
-    #         retries: 20
-    #     restart: unless-stopped
-
-    # SQL Server (real backend only: docker compose --profile real up)
+    # SQL Server
     sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
         environment:
@@ -52,6 +32,7 @@ services:
         ports:
             - '3001:3001'
         environment:
+            - ASPNETCORE_ENVIRONMENT=Development
             - ConnectionStrings__Default=Server=sqlserver,1433;Database=Lune;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True
             - Jwt__Secret=${JWT_SECRET}
             - Rawg__ApiKey=${RAWG_API_KEY}
@@ -60,6 +41,7 @@ services:
             - GgDeals__ApiKey=${GGDEALS_API_KEY}
         volumes:
             - ./backend:/app
+            - nuget-cache:/root/.nuget/packages
             - /app/src/Lune.Api/bin
             - /app/src/Lune.Api/obj
             - /app/src/Lune.Auth/bin
@@ -93,7 +75,7 @@ services:
         ports:
             - '8080:8080'
         environment:
-            - API_URL=${API_URL:-http://mock-api:4001}
+            - API_URL=${API_URL:-http://localhost:3001}
         volumes:
             - ./frontend:/app
             - /app/node_modules
@@ -110,3 +92,4 @@ networks:
 
 volumes:
     sqlserver-data:
+    nuget-cache:
