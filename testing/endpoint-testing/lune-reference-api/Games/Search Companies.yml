@@ -6,7 +6,7 @@ info:
   - Games
 http:
   method: GET
-  url: '{{baseUrl}}/api/games/companies'
+  url: '{{baseUrl}}/api/games/companies?kind=developer&search={{developer}}'
   params:
   - name: kind
     value: developer
@@ -18,8 +18,7 @@ http:
 runtime:
   scripts:
   - type: after-response
-    code: |-
-      if (res.status === 200 && res.body.length) bru.setVar('developerSlug', res.body[0].slug);
+    code: if (res.status === 200 && res.body.length) bru.setVar('developerSlug', res.body[0].slug);
   - type: tests
     code: |-
       test('returns 200', () => {
