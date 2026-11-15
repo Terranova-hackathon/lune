@@ -1,0 +1,102 @@
+info:
+  name: List Favorites
+  type: http
+  seq: 1
+  tags:
+    - Favorites
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/favorites"
+  params:
+    - name: page
+      value: "1"
+      type: query
+      description: Page number, starting at 1.
+    - name: pageSize
+      value: "20"
+      type: query
+      description: Results per page, 1–40. Default 20.
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+examples:
+  - name: 200 Response
+    description: OK
+    request:
+      url: "{{baseUrl}}/api/favorites"
+      method: GET
+      params:
+        - name: page
+          value: "1"
+          type: query
+          description: Page number, starting at 1.
+        - name: pageSize
+          value: "20"
+          type: query
+          description: Results per page, 1–40. Default 20.
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "items": [
+              {
+                "id": "",
+                "name": "",
+                "released": "",
+                "backgroundImage": "",
+                "rating": "",
+                "metacritic": "",
+                "genres": [
+                  {
+                    "value": "",
+                    "name": ""
+                  }
+                ],
+                "platforms": [
+                  {
+                    "value": "",
+                    "name": ""
+                  }
+                ]
+              }
+            ],
+            "page": "",
+            "pageSize": "",
+            "totalCount": "",
+            "totalPages": ""
+          }
+  - name: 401 Response
+    description: Unauthorized
+    request:
+      url: "{{baseUrl}}/api/favorites"
+      method: GET
+      params:
+        - name: page
+          value: "1"
+          type: query
+          description: Page number, starting at 1.
+        - name: pageSize
+          value: "20"
+          type: query
+          description: Results per page, 1–40. Default 20.
+    response:
+      status: 401
+      statusText: Unauthorized
+      body:
+        type: text
+        data: ""
+
+docs: The signed-in user's saved games, newest first, in the same shape as search results. Game details are a copy taken when the game was saved, so they still load if Game Database is unavailable but may not reflect later changes. Requires sign-in.

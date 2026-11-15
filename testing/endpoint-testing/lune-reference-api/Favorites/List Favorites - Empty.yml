@@ -1,0 +1,39 @@
+info:
+  name: List Favorites - Empty
+  type: http
+  seq: 7
+  tags:
+  - Favorites
+http:
+  method: GET
+  url: '{{baseUrl}}/api/favorites'
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 200', () => {
+        expect(res.status).to.equal(200);
+      });
+
+      test('returns a paged result', () => {
+        const b = res.body;
+        expect(b).to.have.property('items').that.is.an('array');
+        ['page', 'pageSize', 'totalCount', 'totalPages'].forEach(k => expect(b[k], k).to.be.a('number'));
+        expect(b.items.length).to.be.at.most(b.pageSize);
+        expect(b.totalPages).to.equal(b.pageSize > 0 ? Math.ceil(b.totalCount / b.pageSize) : 0);
+      });
+
+      test('a new user has no favorites', () => {
+        expect(res.body.totalCount).to.equal(0);
+        expect(res.body.items).to.be.empty;
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

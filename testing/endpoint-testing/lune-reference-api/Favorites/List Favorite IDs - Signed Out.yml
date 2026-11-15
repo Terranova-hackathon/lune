@@ -1,0 +1,23 @@
+info:
+  name: List Favorite IDs - Signed Out
+  type: http
+  seq: 3
+  tags:
+  - Favorites
+http:
+  method: GET
+  url: '{{baseUrl}}/api/favorites/ids'
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 401', () => {
+        expect(res.status).to.equal(401);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

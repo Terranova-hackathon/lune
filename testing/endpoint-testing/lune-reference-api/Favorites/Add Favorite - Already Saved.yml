@@ -1,0 +1,32 @@
+info:
+  name: Add Favorite - Already Saved
+  type: http
+  seq: 9
+  tags:
+  - Favorites
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/favorites/:Id'
+  params:
+  - name: Id
+    value: '{{gameId}}'
+    type: path
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 201', () => {
+        expect(res.status).to.equal(201);
+      });
+
+      // Saving an existing favorite is safe and also returns 201.
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

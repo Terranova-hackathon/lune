@@ -1,0 +1,90 @@
+info:
+  name: Register
+  type: http
+  seq: 1
+  tags:
+    - Auth
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/register"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "",
+        "password": "",
+        "displayName": "",
+        "acceptedPrivacyPolicy": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+
+examples:
+  - name: 201 Response
+    description: Created
+    request:
+      url: "{{baseUrl}}/api/auth/register"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "email": "",
+            "password": "",
+            "displayName": "",
+            "acceptedPrivacyPolicy": false
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "id": "",
+            "email": "",
+            "displayName": ""
+          }
+  - name: 400 Response
+    description: Bad Request
+    request:
+      url: "{{baseUrl}}/api/auth/register"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "email": "",
+            "password": "",
+            "displayName": "",
+            "acceptedPrivacyPolicy": false
+          }
+    response:
+      status: 400
+      statusText: Bad Request
+      headers:
+        - name: Content-Type
+          value: application/problem+json
+      body:
+        type: json
+        data: |-
+          {
+            "type": "",
+            "title": "",
+            "status": "",
+            "detail": "",
+            "instance": "",
+            "errors": {}
+          }
+
+docs: "Create an account and sign in. On success the server sets the HttpOnly auth cookie, so no separate login is needed. Password: at least 8 characters, with an uppercase letter, a lowercase letter, a digit and a symbol. Email must not already be registered. Display name is optional; if given, it must be unique. `acceptedPrivacyPolicy` must be `true`. Validation errors return 400, keyed by field or by Identity error code."

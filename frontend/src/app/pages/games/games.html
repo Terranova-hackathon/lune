@@ -105,71 +105,19 @@
         </div>
       }
     </div>
-
-    <!-- PAGINATION -->
-    <nav
-      class="pagination-controls mt-5"
-      aria-label="Games pagination"
-    >
-      <button
-        type="button"
-        class="btn btn-outline-secondary"
-        [disabled]="currentPage() <= 1 || loading()"
-        (click)="changePage(currentPage() - 1)"
-      >
-        Previous
-      </button>
-
-      @for (page of pageNumbers(); track $index) {
-        @if (page === '...') {
-          <span class="pagination-ellipsis" aria-hidden="true">…</span>
-        } @else {
-          <button
-            type="button"
-            class="btn pagination-number"
-            [class.btn-primary]="page === currentPage()"
-            [class.btn-outline-secondary]="page !== currentPage()"
-            [attr.aria-current]="page === currentPage() ? 'page' : null"
-            [attr.aria-label]="'Go to page ' + page"
-            [disabled]="loading()"
-            (click)="changePage(page)"
-          >
-            {{ page }}
-          </button>
-        }
-      }
-
-      <button
-        type="button"
-        class="btn btn-outline-secondary"
-        [disabled]="currentPage() >= totalPages() || loading()"
-        (click)="changePage(currentPage() + 1)"
-      >
-        Next
-      </button>
-    </nav>
-
-    <div class="games-page__summary mt-3" aria-live="polite">
-      <p class="games-page__total">
-        Page {{ currentPage() }} of {{ totalPages() }}
-      </p>
-
-      <p class="games-page__total">
-        {{ totalGames() }}
-        {{ searchTerm() || hasActiveFilters()
-          ? 'matching games'
-          : 'total games' }}
-      </p>
-    </div>
+    <app-games-pagination
+      [currentPage]="currentPage()"
+      [totalPages]="totalPages()"
+      [totalGames]="totalGames()"
+      [loading]="loading()"
+      [filtered]="!!searchTerm() || hasActiveFilters()"
+      (pageChanged)="changePage($event)"
+    />
   }
 
-  <dialog #loginDialog class="login-prompt">
-    <p>You need to log in to add games to your favorites. Proceed?</p>
-    <form method="dialog" class="d-flex justify-content-end gap-2">
-      <button type="submit" class="btn btn-outline-secondary">No</button>
-      <button type="button" class="btn btn-primary" (click)="goToLogin()">Yes</button>
-    </form>
-  </dialog>
+  <app-games-login-prompt
+    (confirmed)="goToLogin($event)"
+  />
 
 </main>
 

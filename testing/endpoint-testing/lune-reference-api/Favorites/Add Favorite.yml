@@ -1,0 +1,132 @@
+info:
+  name: Add Favorite
+  type: http
+  seq: 8
+  tags:
+  - Favorites
+http:
+  method: PUT
+  url: '{{baseUrl}}/api/favorites/:Id'
+  params:
+  - name: Id
+    value: '{{gameId}}'
+    type: path
+  auth: inherit
+  headers:
+  - name: Cookie
+    value: Lune_auth={{token}}
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      test('returns 201', () => {
+        expect(res.status).to.equal(201);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true
+examples:
+- name: 201 Response
+  description: Created
+  request:
+    url: '{{baseUrl}}/api/favorites/:Id'
+    method: PUT
+    params:
+    - name: Id
+      value: ''
+      type: path
+      description: Game Database game ID to save, the same ID used by /api/games.
+  response:
+    status: 201
+    statusText: Created
+    body:
+      type: text
+      data: ''
+- name: 401 Response
+  description: Unauthorized
+  request:
+    url: '{{baseUrl}}/api/favorites/:Id'
+    method: PUT
+    params:
+    - name: Id
+      value: ''
+      type: path
+      description: Game Database game ID to save, the same ID used by /api/games.
+  response:
+    status: 401
+    statusText: Unauthorized
+    body:
+      type: text
+      data: ''
+- name: 404 Response
+  description: Not Found
+  request:
+    url: '{{baseUrl}}/api/favorites/:Id'
+    method: PUT
+    params:
+    - name: Id
+      value: ''
+      type: path
+      description: Game Database game ID to save, the same ID used by /api/games.
+  response:
+    status: 404
+    statusText: Not Found
+    body:
+      type: text
+      data: ''
+- name: 409 Response
+  description: Conflict
+  request:
+    url: '{{baseUrl}}/api/favorites/:Id'
+    method: PUT
+    params:
+    - name: Id
+      value: ''
+      type: path
+      description: Game Database game ID to save, the same ID used by /api/games.
+  response:
+    status: 409
+    statusText: Conflict
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": ""
+        }
+- name: 503 Response
+  description: Service Unavailable
+  request:
+    url: '{{baseUrl}}/api/favorites/:Id'
+    method: PUT
+    params:
+    - name: Id
+      value: ''
+      type: path
+      description: Game Database game ID to save, the same ID used by /api/games.
+  response:
+    status: 503
+    statusText: Service Unavailable
+    headers:
+    - name: Content-Type
+      value: application/problem+json
+    body:
+      type: json
+      data: |-
+        {
+          "type": "",
+          "title": "",
+          "status": "",
+          "detail": "",
+          "instance": ""
+        }
+docs: 'Save a game to the signed-in user''s favorites. No request body. Safe to repeat: saving a game that is already a favorite also returns 201. Each user can save up to 1000 games (409 when full). Returns 404 if Game Database has no game with this ID. Requires sign-in.'

@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.14" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.19.0" />
     <ProjectReference Include="..\Lune.Games\Lune.Games.csproj" />
     <ProjectReference Include="..\Lune.Shared\Lune.Shared.csproj" />

@@ -1,0 +1,80 @@
+info:
+  name: Search Games - Invalid Ordering
+  type: http
+  seq: 4
+  tags:
+  - Games
+http:
+  method: GET
+  url: '{{baseUrl}}/api/games'
+  params:
+  - name: search
+    value: ''
+    type: query
+    description: Text to match anywhere in the game name. Leave empty to browse the most-rated games.
+    disabled: true
+  - name: page
+    value: '1'
+    type: query
+    description: Page number, starting at 1.
+  - name: pageSize
+    value: '20'
+    type: query
+    description: Results per page, 1–40. Default 20.
+  - name: genres
+    value: ''
+    type: query
+    description: Comma-separated genre slugs, up to 10. Get valid values from `GET /api/games/filters`.
+    disabled: true
+  - name: platforms
+    value: ''
+    type: query
+    description: 'Comma-separated platform IDs, up to 10. Example: `6,167` (PC, PlayStation 5). Get valid values from `GET /api/games/filters`.'
+    disabled: true
+  - name: developers
+    value: ''
+    type: query
+    description: Comma-separated developer slugs, up to 10. Get slugs from `GET /api/games/companies?kind=developer`.
+    disabled: true
+  - name: publishers
+    value: ''
+    type: query
+    description: Comma-separated publisher slugs, up to 10. Get slugs from `GET /api/games/companies?kind=publisher`.
+    disabled: true
+  - name: ordering
+    value: popularity
+    type: query
+    description: 'Sort order: `-rating`, `-metacritic`, `-released`, `released`, `-added` (most rated) or `name`. A leading `-` means descending. Default: most rated when browsing, name A–Z when searching.'
+  - name: metacriticMin
+    value: ''
+    type: query
+    description: Minimum critic score, 0–100. Game Database has no Metacritic score, so this uses Game Database's critic rating.
+    disabled: true
+  - name: metacriticMax
+    value: ''
+    type: query
+    description: Maximum critic score, 0–100. Must not be lower than `metacriticMin`.
+    disabled: true
+  auth: inherit
+runtime:
+  scripts:
+  - type: tests
+    code: |-
+      function hasErrorKey(body, name) {
+        const keys = Object.keys((body && body.errors) || {});
+        return keys.some(k => k.toLowerCase() === name.toLowerCase());
+      }
+
+      test('returns 400', () => {
+        expect(res.status).to.equal(400);
+      });
+
+      test('reports an error for ordering', () => {
+        expect(hasErrorKey(res.body, 'ordering'), JSON.stringify(res.body.errors)).to.equal(true);
+      });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

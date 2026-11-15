@@ -10,32 +10,32 @@ namespace Lune.Api;
 /// </summary>
 public static class LandingPage
 {
-    public static void Map(WebApplication app)
+  public static void Map(WebApplication app)
+  {
+    app.MapGet("/", (EndpointDataSource source) =>
     {
-        app.MapGet("/", (EndpointDataSource source) =>
-        {
-            var rows = new StringBuilder();
+      var rows = new StringBuilder();
 
-            var endpoints = source.Endpoints
-                .OfType<RouteEndpoint>()
-                .Where(e => e.RoutePattern.RawText is { } raw && raw != "/" && !raw.StartsWith("/openapi"))
-                .SelectMany(e => (e.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? ["ANY"])
-                    .Select(method => (Method: method, Route: e.RoutePattern.RawText!, Auth: e.Metadata.GetMetadata<Microsoft.AspNetCore.Authorization.IAuthorizeData>() is not null)))
-                .OrderBy(e => e.Route)
-                .ThenBy(e => e.Method);
+      var endpoints = source.Endpoints
+              .OfType<RouteEndpoint>()
+              .Where(e => e.RoutePattern.RawText is { } raw && raw != "/" && !raw.StartsWith("/openapi"))
+              .SelectMany(e => (e.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? ["ANY"])
+                  .Select(method => (Method: method, Route: e.RoutePattern.RawText!, Auth: e.Metadata.GetMetadata<Microsoft.AspNetCore.Authorization.IAuthorizeData>() is not null)))
+              .OrderBy(e => e.Route)
+              .ThenBy(e => e.Method);
 
-            foreach (var (method, route, auth) in endpoints)
-            {
-                rows.Append($"<tr><td><span class=\"m {method}\">{method}</span></td>")
-                    .Append($"<td><code>{WebUtility.HtmlEncode(route)}</code></td>")
-                    .Append($"<td>{(auth ? "🔒 auth required" : "Public")}</td></tr>");
-            }
+      foreach (var (method, route, auth) in endpoints)
+      {
+        rows.Append($"<tr><td><span class=\"m {method}\">{method}</span></td>")
+                .Append($"<td><code>{WebUtility.HtmlEncode(route)}</code></td>")
+                .Append($"<td>{(auth ? "🔒 auth required" : "Public")}</td></tr>");
+      }
 
-            return Results.Content(Html.Replace("{{ROWS}}", rows.ToString()), "text/html; charset=utf-8");
-        }).ExcludeFromDescription();
-    }
+      return Results.Content(Html.Replace("{{ROWS}}", rows.ToString()), "text/html; charset=utf-8");
+    }).ExcludeFromDescription();
+  }
 
-    private const string Html = """
+  private const string Html = """
 <!doctype html>
 <html lang="en">
 <head>
@@ -122,7 +122,7 @@ public static class LandingPage
   };
   document.getElementById('deleteBtn').onclick = async () => {
     if (!confirm('Permanently delete the currently logged-in account?')) return;
-    const res = await fetch('/api/auth/delete-account', { method: 'POST' });
+    const res = await fetch('/api/auth/delete-account', { method: 'DELETE' });
     out.hidden = false;
     out.textContent = res.status + ' ' + res.statusText + '\n' + await res.text();
   };
