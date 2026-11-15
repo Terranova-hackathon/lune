@@ -16,15 +16,6 @@ Each item notes what's already in place and where it would go. Sections marked _
 
 ## Features
 
-### Video game comparison (brief §VII.3)
-
-Select two or more games and see their platforms, ratings, release dates and prices side by side.
-
-- **Already in place:** the detail and price endpoints return everything a comparison needs.
-- **What's needed:** a selection mechanism on the game cards and a comparison page. Possibly no backend changes.
-
-_(details to add)_
-
 ### Wishlist (brief §VII.4)
 
 A list of games to buy or try later, separate from favorites.
