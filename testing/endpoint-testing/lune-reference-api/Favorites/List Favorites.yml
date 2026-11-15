@@ -6,7 +6,7 @@ info:
   - Favorites
 http:
   method: GET
-  url: '{{baseUrl}}/api/favorites'
+  url: '{{baseUrl}}/api/favorites?page=1&pageSize=20'
   params:
   - name: page
     value: '1'

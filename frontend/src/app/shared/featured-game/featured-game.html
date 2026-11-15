@@ -1,5 +1,18 @@
-<section class="featured" aria-label="Featured games">
-	<ul class="featured__track" #track (scroll)="updateScrollState()">
+<section
+	class="featured"
+	aria-label="Featured games"
+	tabindex="0"
+	(mouseenter)="pauseOnHover()"
+	(mouseleave)="resumeAfterHover()"
+	(focusin)="pauseOnFocus()"
+	(focusout)="resumeAfterFocus($event)"
+	(keydown)="onCarouselKeydown($event)"
+>
+	<ul
+		class="featured__track"
+		#track
+		(scroll)="updateScrollState()"
+	>
 		@for (game of games(); track game.id) {
 			<li class="featured__slide">
 				@if (game.backgroundImage) {
@@ -14,7 +27,7 @@
 				<div class="featured__details">
 					<a
 						class="featured__link"
-						routerLink="/games"
+						[routerLink]="['/games', game.id]"
 						[queryParams]="{ search: game.name }"
 					>
 						<h3 class="featured__name">{{ game.name }}</h3>
