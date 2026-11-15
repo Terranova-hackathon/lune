@@ -2,7 +2,7 @@
 
 <details #filtersPanel class="advanced-filters">
 
-  <summary #filtersPanel class="advanced-filters__summary">
+  <summary #filtersSummary class="advanced-filters__summary">
     <span class="advanced-filters__summary-title">
       <i class="bi bi-sliders" aria-hidden="true"></i>
       Advanced Filters
@@ -15,14 +15,16 @@
     </span>
 
     <span class="advanced-filters__summary-actions">
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-sm advanced-filters__quick-reset"
-        (click)="resetFromSummary($event)"
-      >
-        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-        Reset Filters
-      </button>
+      @if (active()) {
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm advanced-filters__quick-reset"
+          (click)="resetFromSummary($event)"
+        >
+          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+          Reset Filters
+        </button>
+      }
 
       <i
         class="bi bi-chevron-down advanced-filters__chevron"
@@ -78,8 +80,8 @@
                       class="form-check-input"
                       [id]="'genre-' + genre.value"
                       [checked]="isSelected('genres', genre.value)"
-					  [disabled]="!isSelected('genres', genre.value)
-					   && filterState.genres.length >= maxValues"
+                      [disabled]="!isSelected('genres', genre.value)
+                        && filterState.genres.length >= maxValues"
                       (change)="toggleFilter('genres', genre.value)"
                     />
 
@@ -112,8 +114,8 @@
                       class="form-check-input"
                       [id]="'platform-' + platform.value"
                       [checked]="isSelected('platforms', platform.value)"
-					  [disabled]="!isSelected('platforms', platform.value)
-					   && filterState.platforms.length >= maxValues"
+                      [disabled]="!isSelected('platforms', platform.value)
+                        && filterState.platforms.length >= maxValues"
                       (change)="toggleFilter('platforms', platform.value)"
                     />
 
