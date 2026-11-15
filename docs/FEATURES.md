@@ -128,7 +128,7 @@ Built with Bootstrap's grid. Layouts adapt from phone to desktop: the filter pan
 | Dark / light mode (§VII.2)     | Done    | Toggle in the navbar. The choice is stored in the browser and applied on the next visit.                                                                                                     |
 | Video game comparison (§VII.3) | Not yet | See [FUTURE.md](./FUTURE.md).                                                                                                                                                                |
 | Wishlist (§VII.4)              | Not yet | See [FUTURE.md](./FUTURE.md).                                                                                                                                                                |
-| Personal statistics (§VII.5)   | Not yet | See [FUTURE.md](./FUTURE.md).                                                                                                                                                                |
+| Personal statistics (§VII.5)   | No      | Not in scope of project (focus on game comparison, not users)                                                                                                                                |
 
 ### Our own additions
 
