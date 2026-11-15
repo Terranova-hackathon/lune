@@ -20,7 +20,7 @@
 	<div class="compare-tray__actions">
 	<span class="compare-tray__count" aria-live="polite">
 		{{ compare.count() }} / {{ maxCompare }}
-		@if (compare.count()) {
+		@if (compare.count() < 2) {
 		· pick one more
 		}
 	</span>
