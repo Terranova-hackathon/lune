@@ -1,0 +1,48 @@
+@let g = game();
+
+<div class="ratings-layout">
+<section class="ratings-panel" aria-label="Game ratings">
+	<h2>
+	<i class="bi bi-star" aria-hidden="true"></i>
+	Ratings
+	</h2>
+
+	<dl>
+	<div class="ratings-panel__row">
+		<dt>Player rating</dt>
+		<dd>
+		@if (g.rating > 0) {
+			<span class="rating-value">
+			<i class="bi bi-star-fill" aria-hidden="true"></i>
+			{{ g.rating | number:'1.1-1' }}
+			<small>/ 5</small>
+			</span>
+		} @else {
+			<span class="rating-empty">Not rated yet</span>
+		}
+		</dd>
+	</div>
+
+	<div class="ratings-panel__row">
+		<dt>Critic score</dt>
+		<dd>
+		@if (g.metacritic != null) {
+			<span
+			class="critic-value"
+			[class.good]="metacriticClass(g.metacritic) === 'good'"
+			[class.mixed]="metacriticClass(g.metacritic) === 'mixed'"
+			[class.bad]="metacriticClass(g.metacritic) === 'bad'"
+			>
+			{{ g.metacritic }}
+			<small>/ 100</small>
+			</span>
+		} @else {
+			<span class="rating-empty">Not available</span>
+		}
+		</dd>
+	</div>
+	</dl>
+</section>
+
+<app-price-comparison [gameId]="g.id" />
+</div>

@@ -1,0 +1,23 @@
+<section>
+  <h2>Screenshots</h2>
+
+  <img
+    class="game-details__main-shot"
+    [src]="selectedShot() ?? screenshots()[0]"
+    [alt]="gameName() + ' screenshot'"
+  />
+
+  <div class="game-details__thumbs">
+    @for (shot of screenshots(); track shot; let i = $index) {
+      <button
+        type="button"
+        [attr.aria-label]="'View screenshot ' + (i + 1)"
+        [attr.aria-pressed]="shot === (selectedShot() ?? screenshots()[0])"
+        [class.active]="shot === (selectedShot() ?? screenshots()[0])"
+        (click)="selectedShot.set(shot)"
+      >
+        <img [src]="shot" alt="" loading="lazy" />
+      </button>
+    }
+  </div>
+</section>
